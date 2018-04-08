@@ -1,0 +1,12 @@
+[package]
+name = "cluUname"
+version = "0.1.0"
+authors = ["Денис Котляров <#Ulin Project 18, denis2005991@gmail.com>"]
+repository = "https://github.com/clucompany/cluUname.git"
+license = "Apache-2.0"
+readme = "README.md"
+
+description = "Name and information about the current kernel."
+
+[dependencies]
+
