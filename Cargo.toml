@@ -1,6 +1,6 @@
 [package]
 name = "cluuname"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Денис Котляров <#Ulin Project 18, denis2005991@gmail.com>"]
 repository = "https://github.com/clucompany/cluUname.git"
 license = "Apache-2.0"
@@ -16,4 +16,4 @@ enable_domainname = []
 
 [dependencies]
 libc = "0.2.40"
-clucstr = "0.1.2"
+clucstr = "0.1.3"
