@@ -15,5 +15,5 @@ enable_domainname = []
 
 
 [dependencies]
-libc = "*"
+libc = "0.2.40"
 clucstr = "0.1.2"
