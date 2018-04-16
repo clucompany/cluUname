@@ -9,4 +9,5 @@ readme = "README.md"
 description = "Name and information about the current kernel."
 
 [dependencies]
+libc = "*"
 
