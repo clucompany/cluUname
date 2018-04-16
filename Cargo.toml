@@ -7,7 +7,7 @@ license = "Apache-2.0"
 readme = "README.md"
 
 description = "Name and information about the current kernel."
-keywords = ["uname", "cluuname", "hostname"]
+keywords = ["uname", "cluuname", "hostname", "clucompany"]
 categories = ["development-tools"]
 
 [features]
