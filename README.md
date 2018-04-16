@@ -9,6 +9,7 @@
 Name and information about the current kernel.
 
 # Print
+1
 
 	extern crate cluuname;
 	use cluuname::uname;
@@ -19,6 +20,7 @@ Name and information about the current kernel.
 		//"Linux" "cluComp" "4.15.15-1-zen" "#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018" "x86_64"
 	}
 
+2
 
 	extern crate cluuname;
 	use cluuname::uname;
