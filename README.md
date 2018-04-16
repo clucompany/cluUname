@@ -79,7 +79,7 @@ Name and information about the current kernel.
 	}
 
 
-# Custom
+# CustomUname
 
 
 	#![feature(plugin)]
