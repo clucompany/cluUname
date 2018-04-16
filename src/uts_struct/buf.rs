@@ -15,10 +15,14 @@ pub struct UtsNameBuf {
 	release:	CString,
 	version:	CString,
 	machine:	CString,
+	
+	#[cfg(feature = "enable_domainname")]
 	domainname:	CString,
 }
 
 impl UtsNameBuf {
+	
+	#[cfg(feature = "enable_domainname")]
 	#[inline]
 	pub fn new(a1: CString, a2: CString, a3: CString, a4: CString, a5: CString, a6: CString) -> UtsNameBuf {
 		UtsNameBuf {
@@ -30,6 +34,19 @@ impl UtsNameBuf {
 			domainname: a6,
 		}
 	}
+	
+	#[cfg(not(feature = "enable_domainname"))]
+	#[inline]
+	pub fn new(a1: CString, a2: CString, a3: CString, a4: CString, a5: CString) -> UtsNameBuf {
+		UtsNameBuf {
+			sysname: a1,
+			nodename: a2,
+			release: a3,
+			version: a4,
+			machine: a5,
+		}
+	}
+	
 	
 	pub fn this_machine() -> Result<Self, i32> {
 		let mut utsname: libc::utsname = unsafe { mem::uninitialized() };
@@ -64,6 +81,8 @@ impl UtsName for UtsNameBuf {
 	fn as_machine(&self) -> &CStr {
 		&self.machine
 	}
+	
+	#[cfg(feature = "enable_domainname")]
 	#[inline]
 	fn as_domainname(&self) -> &CStr {
 		&self.domainname
@@ -77,9 +96,17 @@ impl fmt::Display for UtsNameBuf {
 		let release = self.as_release();
 		let version = self.as_version();
 		let machine = self.as_machine();
+		
+		#[cfg(feature = "enable_domainname")]
 		let domainname = self.as_domainname();
 		
-		write!(f, "{:?} {:?} {:?} {:?} {:?} {:?}", sysname, nodename, release, version, machine, domainname)
+		#[cfg(feature = "enable_domainname")]
+		let result = write!(f, "{:?} {:?} {:?} {:?} {:?} {:?}", sysname, nodename, release, version, machine, domainname);
+		
+		#[cfg(not(feature = "enable_domainname"))]
+		let result = write!(f, "{:?} {:?} {:?} {:?} {:?}", sysname, nodename, release, version, machine);
+		
+		result
 	}
 }
 
@@ -92,6 +119,8 @@ impl From< libc::utsname > for UtsNameBuf {
 		let release = Box::new(uts.release);
 		let version = Box::new(uts.version);
 		let machine = Box::new(uts.machine);
+		
+		#[cfg(feature = "enable_domainname")]
 		let domainname = Box::new(uts.domainname);
 		
 		
@@ -101,6 +130,8 @@ impl From< libc::utsname > for UtsNameBuf {
 			release:	CString::from_raw(release.as_ptr() as *mut c_char),
 			version:	CString::from_raw(version.as_ptr() as *mut c_char),
 			machine:	CString::from_raw(machine.as_ptr() as *mut c_char),
+			
+			#[cfg(feature = "enable_domainname")]
 			domainname:	CString::from_raw(domainname.as_ptr() as *mut c_char),
 		}};
 		
@@ -109,12 +140,16 @@ impl From< libc::utsname > for UtsNameBuf {
 		mem::forget(release);
 		mem::forget(version);
 		mem::forget(machine);
+		
+		#[cfg(feature = "enable_domainname")]
 		mem::forget(domainname);
 		
 		result
 	}
 }
 
+
+#[cfg(feature = "enable_domainname")]
 impl From< (CString, CString, CString, CString, CString, CString) > for UtsNameBuf {
 	#[inline]
 	fn from(uts: (CString, CString, CString, CString, CString, CString)) -> UtsNameBuf {
@@ -123,7 +158,13 @@ impl From< (CString, CString, CString, CString, CString, CString) > for UtsNameB
 }
 
 
-
+#[cfg(not(feature = "enable_domainname"))]
+impl From< (CString, CString, CString, CString, CString) > for UtsNameBuf {
+	#[inline]
+	fn from(uts: (CString, CString, CString, CString, CString)) -> UtsNameBuf {
+		UtsNameBuf::new(uts.0, uts.1, uts.2, uts.3, uts.4)
+	}
+}
 
 
 

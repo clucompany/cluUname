@@ -22,75 +22,112 @@ Name and information about the current kernel.
 
 # Print
 ```
-use cluUname::uname;
+extern crate cluuname;
+use cluuname::uname;
 
-let uname = uname().unwrap();
-println!("{}", uname);
-//Linux cluComp 4.15.15-1-zen #1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018 x86_64 (none)
+fn main() {
+	let uname = uname().unwrap();
+	println!("{}", uname);
+	//"Linux" "cluComp" "4.15.15-1-zen" "#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018" "x86_64"
+}
 ```
+```
+extern crate cluuname;
+use cluuname::uname;
+use cluuname::UtsName;
+use cluuname::build;
+
+fn main() {
+	let uname = uname().unwrap();
+	nodename(uname);
+	//NODENAME "R510"
+	
+	let custom_uname = build::linux_216_86();
+	nodename(custom_uname);
+	//NODENAME "cluComp"
+}
+
+fn nodename<T: UtsName>(uname: T) {
+	println!("NODENAME {:?}", uname.as_nodename());
+}
+```
+
 
 # CustomPrint
 ```
-use cluUname::uname;
-use cluUname::UtsName;
+extern crate cluuname;
+use cluuname::uname;
+use cluuname::UtsName;
 
-let uname = uname().unwrap();
+fn main() {
+	let uname = uname().unwrap();
 
-let sysname = uname.as_sysname();
-let nodename = uname.as_nodename();
-let release = uname.as_release();
-let version = uname.as_version();
-let machine = uname.as_machine();
-let domainname = uname.as_domainname();
+	let sysname = uname.as_sysname();
+	let nodename = uname.as_nodename();
+	let release = uname.as_release();
+	let version = uname.as_version();
+	let machine = uname.as_machine();
 
-println!("{:?} {:?} {:?} {:?} {:?} {:?}", sysname, nodename, release, version, machine, domainname);
-//"Linux "cluComp" "4.15.15-1-zen" "#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018" "x86_64" "(none)"
+	println!("{:?} {:?} {:?} {:?} {:?}", sysname, nodename, release, version, machine);
+	//"Linux "cluComp" "4.15.15-1-zen" "#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018" "x86_64"
+}
 ```
 
 # Hash + Hash Version
 ```
-use cluUname::uname;
-use cluUname::UtsName;
+extern crate cluuname;
+use cluuname::uname;
+use cluuname::UtsName;
 
-let uname = uname().unwrap();
+fn main() {
+    let uname = uname().unwrap();
 
-let machine_all_hash = uname.uname_hash();
-let machive_version_hash = uname.version_hash();
+    let machine_all_hash = uname.uname_hash();
+    let machive_version_hash = uname.version_hash();
 
-println!("UNAME_HASH {}", machine_all_hash);
-println!("UNAME_V_HASH {}", machive_version_hash);
-
-
+    println!("UNAME_HASH {}", machine_all_hash);
+    //12821596144084292007
+    println!("UNAME_V_HASH {}", machive_version_hash);
+    //2978006705337010168
+}
 ```
 
 # Custom
 
 ```
-use cluUname::builder;
-macro_rules! cstr {
-	($s:expr) => {
-		unsafe {
-       		::std::ffi::CStr::from_ptr(
-				concat!($s, "\0").as_ptr() as *const ::std::os::raw::c_char
-			)
-		}
-	};
-}
+#![feature(plugin)]
+#![plugin(clucstr)]
+extern crate cluuname;
+use cluuname::build;
 
-let uname = builder::custom(
-	cstr!("Linux"),
-	cstr!("cluComp"),
-	cstr!("2.16-localhost"),
-	cstr!("#1 SMP PREEMPT Sat Mar 31 23:59:18 UTC 2008"),
-	cstr!("x86"),
-	cstr!("(none)"),
-);
-println!("{}", uname);
-//Linux cluComp 2.16-localhost #1 SMP PREEMPT Sat Mar 31 23:59:18 UTC 2008 x86 (none)
+use std::ffi::CStr;
+
+fn main() {
+	let uname = build::custom(
+		cstr!("Linux"),
+		cstr!("cluComp"),
+		cstr!("2.16-localhost"),
+		cstr!("#1 SMP PREEMPT Sat Mar 31 23:59:18 UTC 2008"),
+		cstr!("x86"),
+	);
+	println!("{}", uname);
+	//"Linux" "cluComp" "2.16-localhost" "#1 SMP PREEMPT Sat Mar 31 23:59:18 UTC 2008" "x86"
+}
+```
+
+# Flags
+enable_domainname - Additional item `domainname`
+
+```
+[dependencies]
+cluuname = { version = "*", features = ["enable_domainname"] }
 ```
 
 */
+#![feature(plugin)]
+#![plugin(clucstr)]
 
+use std::ffi::CStr;
 
 
 pub mod hash_version;
@@ -101,25 +138,13 @@ use uts_struct::buf::UtsNameBuf;
 use uts_struct::slice::UtsNameSlice;
 
 use std::fmt::Debug;
-use std::ffi::CStr;
-
+use std::fmt::Display;
 
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-
-macro_rules! cstr {
-	($s:expr) => {
-		unsafe {
-       		::std::ffi::CStr::from_ptr(
-				concat!($s, "\0").as_ptr() as *const ::std::os::raw::c_char
-			)
-		}
-	};
-}
-
 ///Basic uname trait
-pub trait UtsName: Hash + HashVersion + Debug + PartialEq + Eq + PartialOrd + Clone {
+pub trait UtsName: Hash + HashVersion + Display + Debug + Hash + PartialEq + Eq + PartialOrd + Ord + Clone {
 	///Get sysname for this structure.
 	fn as_sysname(&self) -> &CStr;
 	///Get nodename for this structure.
@@ -130,7 +155,9 @@ pub trait UtsName: Hash + HashVersion + Debug + PartialEq + Eq + PartialOrd + Cl
 	fn as_version(&self) -> &CStr;
 	///Get machine for this structure.
 	fn as_machine(&self) -> &CStr;
+	
 	///Get domainname for this structure.
+	#[cfg(feature = "enable_domainname")]
 	fn as_domainname(&self) -> &CStr;
 	
 	
@@ -152,16 +179,46 @@ pub trait UtsName: Hash + HashVersion + Debug + PartialEq + Eq + PartialOrd + Cl
 
 
 
-///Getting and creating a custom uname
-pub mod builder {
+///Getting and creating a custom uname.
+pub mod build {
 	use uts_struct::slice::UtsNameSlice;
 	use uts_struct::buf::UtsNameBuf;
 	use std::ffi::CStr;
 	
+	
+	
 	///Create custom uname
+	///```
+	///sysname:	a1
+	///nodename:	a2
+	///release:	a3
+	///version:	a4
+	///machine:	a5
+	///
+	///#[cfg(feature = "enable_domainname")]
+	///domainname:	a6
+	///```
+	#[cfg(feature = "enable_domainname")]
 	#[inline]
 	pub fn custom<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr, a6: &'a CStr) -> UtsNameSlice<'a> {
 		UtsNameSlice::new(a1, a2, a3, a4, a5, a6)
+	}
+	
+	///Create custom uname
+	///```
+	///sysname:	a1
+	///nodename:	a2
+	///release:	a3
+	///version:	a4
+	///machine:	a5
+	///
+	///#[cfg(feature = "enable_domainname")]
+	///domainname:	a6
+	///```
+	#[cfg(not(feature = "enable_domainname"))]
+	#[inline]
+	pub fn custom<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr) -> UtsNameSlice<'a> {
+		UtsNameSlice::new(a1, a2, a3, a4, a5)
 	}
 	
 	
@@ -172,6 +229,16 @@ pub mod builder {
 	}
 	
 	///"Linux" "cluComp" "2.16-localhost" "#1 SMP PREEMPT Sat Mar 31 23:59:18 UTC 2008" "x86" "(none)"
+	///```
+	///sysname:	cstr!("Linux")
+	///nodename:	cstr!("cluComp")
+	///release:	cstr!("2.16-localhost")
+	///version:	cstr!("#1 SMP PREEMPT Sat Mar 31 23:59:18 UTC 2008")
+	///machine:	cstr!("x86")
+	///
+	///#[cfg(feature = "enable_domainname")]
+	///domainname:	cstr!("(none)")
+	///```
 	pub fn linux_216_86<'a>() -> UtsNameSlice<'a> {
 		custom (
 			cstr!("Linux"),
@@ -179,11 +246,24 @@ pub mod builder {
 			cstr!("2.16-localhost"),
 			cstr!("#1 SMP PREEMPT Sat Mar 31 23:59:18 UTC 2008"),
 			cstr!("x86"),
+			
+			#[cfg(feature = "enable_domainname")]
 			cstr!("(none)"),
 		)
 	}
 	
 	///"Linux" "cluComp" "4.15.15-1-zen" "#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018" "x86_64" "(none)"
+	///```
+	///sysname:	cstr!("Linux")
+	///nodename:	cstr!("cluComp")
+	///release:	cstr!("4.15.15-1-zen")
+	///version:	cstr!("#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018")
+	///machine:	cstr!("x86_64")
+	///
+	///#[cfg(feature = "enable_domainname")]
+	///domainname:	cstr!("(none)")
+	///```
+	///
 	pub fn linux_415_86_64<'a>() -> UtsNameSlice<'a> {
 		custom (
 			cstr!("Linux"),
@@ -191,6 +271,8 @@ pub mod builder {
 			cstr!("4.15.15-1-zen"),
 			cstr!("#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018"),
 			cstr!("x86_64"),
+			
+			#[cfg(feature = "enable_domainname")]
 			cstr!("(none)"),
 		)
 	}
@@ -199,18 +281,54 @@ pub mod builder {
 }
 
 
-///Getting the current uname
+///Getting the current uname.
+///```
+///extern crate cluuname;
+///use cluuname::uname;
+///
+///fn main() {
+///	let uname = uname().unwrap();
+///	println!("{}", uname);
+///	//"Linux" "cluComp" "4.15.15-1-zen" "#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018" "x86_64"
+///}
 #[inline]
 pub fn uname() -> Result<UtsNameBuf, i32> {
-	builder::this_machine()
+	build::this_machine()
 }
 
-///Create custom uname
+///Create custom uname.
+///```
+///sysname:	a1
+///nodename:	a2
+///release:	a3
+///version:	a4
+///machine:	a5
+///
+///#[cfg(feature = "enable_domainname")]
+///domainname:	a6
+///```
+#[cfg(feature = "enable_domainname")]
 #[inline]
 pub fn custom_uname<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr, a6: &'a CStr) -> UtsNameSlice<'a> {
-	builder::custom(a1, a2, a3, a4, a5, a6)
+	build::custom(a1, a2, a3, a4, a5, a6)
 }
 
+///Create custom uname.
+///```
+///sysname:	a1
+///nodename:	a2
+///release:	a3
+///version:	a4
+///machine:	a5
+///
+///#[cfg(feature = "enable_domainname")]
+///domainname:	a6
+///```
+#[cfg(not(feature = "enable_domainname"))]
+#[inline]
+pub fn custom_uname<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr) -> UtsNameSlice<'a> {
+	build::custom(a1, a2, a3, a4, a5)
+}
 
 #[inline]
 pub fn uname_hash<I: UtsName>(uts: &I) -> u64 {
@@ -233,9 +351,9 @@ mod tests {
 	#[test]
 	#[cfg(target_os = "linux")]
 	fn linux() {
-		let uts = uname().unwrap();
-		
-		assert_eq!(uts.as_sysname(), cstr!("Linux"));
+		if let Ok(uts) = uname() {
+			assert_eq!(uts.as_sysname(), cstr!("Linux"));
+		}
 	}
 	
 	#[test]
@@ -246,6 +364,8 @@ mod tests {
 			cstr!("4.15.15-1-zen"),
 			cstr!("#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018"),
 			cstr!("x86_64"),
+			
+			#[cfg(feature = "enable_domainname")]
 			cstr!("(none)"),
 		);
 		
@@ -254,6 +374,8 @@ mod tests {
 		assert_eq!(uts.as_release(), cstr!("4.15.15-1-zen"));
 		assert_eq!(uts.as_version(), cstr!("#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018"));
 		assert_eq!(uts.as_machine(), cstr!("x86_64"));
+		
+		#[cfg(feature = "enable_domainname")]
 		assert_eq!(uts.as_domainname(), cstr!("(none)"));
 	}
 }

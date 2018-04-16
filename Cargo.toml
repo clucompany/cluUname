@@ -8,8 +8,12 @@ readme = "README.md"
 
 description = "Name and information about the current kernel."
 keywords = ["uname", "cluuname", "hostname"]
+categories = ["development-tools"]
+
+[features]
+enable_domainname = []
 
 
 [dependencies]
 libc = "*"
-
+clucstr = "*"
