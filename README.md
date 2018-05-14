@@ -16,7 +16,7 @@ Name and information about the current kernel.
 	fn main() {
 		let uname = uname().unwrap();
 		println!("{}", uname);
-		//"Linux" "cluComp" "4.15.15-1-zen" "#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018" "x86_64"
+		//Linux cluComp 4.15.15-1-zen #1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018 x86_64
 	}
 
 # 2Print
@@ -38,7 +38,7 @@ Name and information about the current kernel.
 	}
 
 	fn nodename<T: UtsName>(uname: T) {
-		println!("NODENAME {:?}", uname.as_nodename());
+		println!("NODENAME {}", uname.display_nodename());
 	}
 
 
@@ -50,13 +50,13 @@ Name and information about the current kernel.
 	fn main() {
 		let uname = uname().unwrap();
 
-		let sysname = uname.as_sysname();
-		let nodename = uname.as_nodename();
-		let release = uname.as_release();
-		let version = uname.as_version();
-		let machine = uname.as_machine();
+		let sysname = uname.display_sysname();
+		let nodename = uname.display_nodename();
+		let release = uname.display_release();
+		let version = uname.display_version();
+		let machine = uname.display_machine();
 
-		println!("{:?} {:?} {:?} {:?} {:?}", sysname, nodename, release, version, machine);
+		println!("{} {} {} {} {}", sysname, nodename, release, version, machine);
 		//"Linux "cluComp" "4.15.15-1-zen" "#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018" "x86_64"
 	}
 
@@ -98,7 +98,7 @@ Name and information about the current kernel.
 			cstr!("x86"),
 		);
 		println!("{}", uname);
-		//"Linux" "cluComp" "2.16-localhost" "#1 SMP PREEMPT Sat Mar 31 23:59:18 UTC 2008" "x86"
+		//Linux cluComp 2.16-localhost #1 SMP PREEMPT Sat Mar 31 23:59:18 UTC 2008 x86
 	}
 
 
