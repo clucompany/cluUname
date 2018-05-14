@@ -57,7 +57,7 @@ Name and information about the current kernel.
 		let machine = uname.display_machine();
 
 		println!("{} {} {} {} {}", sysname, nodename, release, version, machine);
-		//"Linux "cluComp" "4.15.15-1-zen" "#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018" "x86_64"
+		//Linux cluComp 4.15.15-1-zen #1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018 x86_64
 	}
 
 # Hash + Hash Version
