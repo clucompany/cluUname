@@ -30,3 +30,4 @@ impl<'a> HashVersion for UtsNameSlice<'a> {
 		self.as_version().hash(state);
 	}
 }
+

@@ -28,7 +28,8 @@ use cluuname::uname;
 fn main() {
 	let uname = uname().unwrap();
 	println!("{}", uname);
-	//"Linux" "cluComp" "4.15.15-1-zen" "#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018" "x86_64"
+	
+	//Linux cluComp 4.15.15-1-zen #1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018 x86_64
 }
 ```
 # 2Print
@@ -50,7 +51,7 @@ fn main() {
 }
 
 fn nodename<T: UtsName>(uname: T) {
-	println!("NODENAME {:?}", uname.as_nodename());
+	println!("NODENAME {}", uname.display_nodename());
 }
 ```
 
@@ -64,13 +65,13 @@ use cluuname::UtsName;
 fn main() {
 	let uname = uname().unwrap();
 
-	let sysname = uname.as_sysname();
-	let nodename = uname.as_nodename();
-	let release = uname.as_release();
-	let version = uname.as_version();
-	let machine = uname.as_machine();
+	let sysname = uname.display_sysname();
+	let nodename = uname.display_nodename();
+	let release = uname.display_release();
+	let version = uname.display_version();
+	let machine = uname.display_machine();
 
-	println!("{:?} {:?} {:?} {:?} {:?}", sysname, nodename, release, version, machine);
+	println!("{} {} {} {} {}", sysname, nodename, release, version, machine);
 	//"Linux "cluComp" "4.15.15-1-zen" "#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018" "x86_64"
 }
 ```
@@ -113,7 +114,7 @@ fn main() {
 		cstr!("x86"),
 	);
 	println!("{}", uname);
-	//"Linux" "cluComp" "2.16-localhost" "#1 SMP PREEMPT Sat Mar 31 23:59:18 UTC 2008" "x86"
+	//Linux cluComp 2.16-localhost #1 SMP PREEMPT Sat Mar 31 23:59:18 UTC 2008 x86
 }
 ```
 
@@ -134,16 +135,16 @@ use std::ffi::CStr;
 
 pub mod hash_version;
 pub mod uts_struct;
+pub mod display_cstr;
 
 use hash_version::HashVersion;
-use uts_struct::buf::UtsNameBuf;
-use uts_struct::slice::UtsNameSlice;
 
 use std::fmt::Debug;
 use std::fmt::Display;
 
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use display_cstr::DisplayCStr;
 
 ///Basic uname trait
 pub trait UtsName: Hash + HashVersion + Display + Debug + Hash + PartialEq + Eq + PartialOrd + Ord + Clone {
@@ -173,6 +174,44 @@ pub trait UtsName: Hash + HashVersion + Display + Debug + Hash + PartialEq + Eq 
 		self.hash_version(&mut hasher);
 		hasher.finish()  
 	}
+	
+	#[inline]
+	///Display trait for sysname.
+	fn display_sysname<'r>(&'r self) -> DisplayCStr<'r> {
+		DisplayCStr::new(self.as_sysname())
+	}
+	
+	///Display trait for nodename.
+	#[inline]
+	fn display_nodename<'r>(&'r self) -> DisplayCStr<'r> {
+		DisplayCStr::new(self.as_nodename())
+	}
+	
+	///Display trait for release.
+	#[inline]
+	fn display_release<'r>(&'r self) -> DisplayCStr<'r> {
+		DisplayCStr::new(self.as_release())
+	}
+	
+	///Display trait for version.
+	#[inline]
+	fn display_version<'r>(&'r self) -> DisplayCStr<'r> {
+		DisplayCStr::new(self.as_version())
+	}
+	
+	///Display trait for machine.
+	#[inline]
+	fn display_machine<'r>(&'r self) -> DisplayCStr<'r> {
+		DisplayCStr::new(self.as_machine())
+	}
+
+	///Display trait for domainname.
+	#[cfg(feature = "enable_domainname")]
+	#[inline]
+	fn display_domainname<'r>(&'r self) -> DisplayCStr<'r> {
+		DisplayCStr::new(self.as_domainname())
+	}
+	
 }
 
 
@@ -186,7 +225,7 @@ pub mod build {
 	use uts_struct::slice::UtsNameSlice;
 	use uts_struct::buf::UtsNameBuf;
 	use std::ffi::CStr;
-	
+	use UtsName;
 	
 	
 	///Create custom uname
@@ -202,7 +241,7 @@ pub mod build {
 	///```
 	#[cfg(feature = "enable_domainname")]
 	#[inline]
-	pub fn custom<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr, a6: &'a CStr) -> UtsNameSlice<'a> {
+	pub fn custom<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr, a6: &'a CStr) -> impl UtsName + 'a {
 		UtsNameSlice::new(a1, a2, a3, a4, a5, a6)
 	}
 	
@@ -219,14 +258,13 @@ pub mod build {
 	///```
 	#[cfg(not(feature = "enable_domainname"))]
 	#[inline]
-	pub fn custom<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr) -> UtsNameSlice<'a> {
+	pub fn custom<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr) -> impl UtsName + 'a {
 		UtsNameSlice::new(a1, a2, a3, a4, a5)
 	}
-	
-	
+		
 	///Getting the current uname
 	#[inline]
-	pub fn this_machine() -> Result<UtsNameBuf, i32> {
+	pub fn this_machine() -> Result<impl UtsName, i32> {
 		UtsNameBuf::this_machine()
 	}
 	
@@ -241,7 +279,7 @@ pub mod build {
 	///#[cfg(feature = "enable_domainname")]
 	///domainname:	cstr!("(none)")
 	///```
-	pub fn linux_216_86<'a>() -> UtsNameSlice<'a> {
+	pub fn linux_216_86<'a>() -> impl UtsName + 'a {
 		custom (
 			cstr!("Linux"),
 			cstr!("cluComp"),
@@ -266,7 +304,7 @@ pub mod build {
 	///domainname:	cstr!("(none)")
 	///```
 	///
-	pub fn linux_415_86_64<'a>() -> UtsNameSlice<'a> {
+	pub fn linux_415_86_64<'a>() -> impl UtsName + 'a {
 		custom (
 			cstr!("Linux"),
 			cstr!("cluComp"),
@@ -294,7 +332,7 @@ pub mod build {
 ///	//"Linux" "cluComp" "4.15.15-1-zen" "#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018" "x86_64"
 ///}
 #[inline]
-pub fn uname() -> Result<UtsNameBuf, i32> {
+pub fn uname() -> Result<impl UtsName, i32> {
 	build::this_machine()
 }
 
@@ -311,7 +349,7 @@ pub fn uname() -> Result<UtsNameBuf, i32> {
 ///```
 #[cfg(feature = "enable_domainname")]
 #[inline]
-pub fn custom_uname<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr, a6: &'a CStr) -> UtsNameSlice<'a> {
+pub fn custom_uname<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr, a6: &'a CStr) -> impl UtsName + 'a {
 	build::custom(a1, a2, a3, a4, a5, a6)
 }
 
@@ -328,7 +366,7 @@ pub fn custom_uname<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, 
 ///```
 #[cfg(not(feature = "enable_domainname"))]
 #[inline]
-pub fn custom_uname<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr) -> UtsNameSlice<'a> {
+pub fn custom_uname<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr) -> impl UtsName + 'a {
 	build::custom(a1, a2, a3, a4, a5)
 }
 

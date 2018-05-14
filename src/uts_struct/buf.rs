@@ -91,20 +91,20 @@ impl UtsName for UtsNameBuf {
 
 impl fmt::Display for UtsNameBuf {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		let sysname = self.as_sysname();
-		let nodename = self.as_nodename();
-		let release = self.as_release();
-		let version = self.as_version();
-		let machine = self.as_machine();
+		let sysname = self.display_sysname();
+		let nodename = self.display_nodename();
+		let release = self.display_release();
+		let version = self.display_version();
+		let machine = self.display_machine();
 		
 		#[cfg(feature = "enable_domainname")]
-		let domainname = self.as_domainname();
+		let domainname = self.display_domainname();
 		
 		#[cfg(feature = "enable_domainname")]
-		let result = write!(f, "{:?} {:?} {:?} {:?} {:?} {:?}", sysname, nodename, release, version, machine, domainname);
+		let result = write!(f, "{} {} {} {} {} {}", sysname, nodename, release, version, machine, domainname);
 		
 		#[cfg(not(feature = "enable_domainname"))]
-		let result = write!(f, "{:?} {:?} {:?} {:?} {:?}", sysname, nodename, release, version, machine);
+		let result = write!(f, "{} {} {} {} {}", sysname, nodename, release, version, machine);
 		
 		result
 	}
