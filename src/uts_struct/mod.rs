@@ -1,7 +1,7 @@
 
 
 /*!
-Slice and boxed structures
+Slice and boxed uname structures
 */
 
 ///Boxed UtsName

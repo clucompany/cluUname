@@ -1,6 +1,6 @@
 
 /*!
-Hashing the kernel version.
+Additional hash implementations for uname
 */
 
 
@@ -10,6 +10,7 @@ use uts_struct::buf::UtsNameBuf;
 use UtsName;
 
 
+///Hashing the kernel versions (Sysname + Release + Version)
 pub trait HashVersion {
 	///Get a hash version for this structure
 	fn hash_version<H: Hasher>(&self, state: &mut H);
