@@ -6,7 +6,7 @@
 [![Documentation](https://docs.rs/cluuname/badge.svg)](https://docs.rs/cluuname)
 
 
-Name and information about the current kernel.
+Library for displaying information about the system. Implemented only for Linux.
 
 # Print
 
