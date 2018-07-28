@@ -1,6 +1,6 @@
 
 /*!
-Hash trait for kernel version.
+Hashing the kernel version.
 */
 
 

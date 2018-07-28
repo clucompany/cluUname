@@ -1,5 +1,3 @@
-#![feature(conservative_impl_trait)]
-
 //Copyright 2018 #UlinProject Денис Котляров
 
 //Licensed under the Apache License, Version 2.0 (the "License");
@@ -281,7 +279,7 @@ pub mod build {
 	///#[cfg(feature = "enable_domainname")]
 	///domainname:	cstr!("(none)")
 	///```
-	pub fn linux_216_86<'a>() -> impl UtsName + 'a {
+	pub fn linux_216_86() -> impl UtsName + 'static {
 		custom (
 			cstr!("Linux"),
 			cstr!("cluComp"),
@@ -306,7 +304,7 @@ pub mod build {
 	///domainname:	cstr!("(none)")
 	///```
 	///
-	pub fn linux_415_86_64<'a>() -> impl UtsName + 'a {
+	pub fn linux_415_86_64() -> impl UtsName + 'static {
 		custom (
 			cstr!("Linux"),
 			cstr!("cluComp"),

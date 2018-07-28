@@ -101,12 +101,10 @@ impl fmt::Display for UtsNameBuf {
 		let domainname = self.display_domainname();
 		
 		#[cfg(feature = "enable_domainname")]
-		let result = write!(f, "{} {} {} {} {} {}", sysname, nodename, release, version, machine, domainname);
+		return write!(f, "{} {} {} {} {} {}", sysname, nodename, release, version, machine, domainname);
 		
 		#[cfg(not(feature = "enable_domainname"))]
-		let result = write!(f, "{} {} {} {} {}", sysname, nodename, release, version, machine);
-		
-		result
+		return write!(f, "{} {} {} {} {}", sysname, nodename, release, version, machine);
 	}
 }
 
