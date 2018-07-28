@@ -20,8 +20,8 @@ pub struct UtsNameSlice<'a> {
 impl<'a> UtsNameSlice<'a> {
 	#[cfg(feature = "enable_domainname")]
 	#[inline]
-	pub fn new(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr, a6: &'a CStr) -> UtsNameSlice<'a> {
-		UtsNameSlice {
+	pub fn new(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr, a6: &'a CStr) -> Self {
+		Self {
 			sysname: a1,
 			nodename: a2,
 			release: a3,
@@ -33,8 +33,8 @@ impl<'a> UtsNameSlice<'a> {
 	
 	#[cfg(not(feature = "enable_domainname"))]
 	#[inline]
-	pub fn new(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr) -> UtsNameSlice<'a> {
-		UtsNameSlice {
+	pub fn new(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr) -> Self {
+		Self {
 			sysname: a1,
 			nodename: a2,
 			release: a3,

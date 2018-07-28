@@ -24,8 +24,8 @@ impl UtsNameBuf {
 	
 	#[cfg(feature = "enable_domainname")]
 	#[inline]
-	pub fn new(a1: CString, a2: CString, a3: CString, a4: CString, a5: CString, a6: CString) -> UtsNameBuf {
-		UtsNameBuf {
+	pub fn new(a1: CString, a2: CString, a3: CString, a4: CString, a5: CString, a6: CString) -> Self {
+		Self {
 			sysname: a1,
 			nodename: a2,
 			release: a3,
@@ -37,8 +37,8 @@ impl UtsNameBuf {
 	
 	#[cfg(not(feature = "enable_domainname"))]
 	#[inline]
-	pub fn new(a1: CString, a2: CString, a3: CString, a4: CString, a5: CString) -> UtsNameBuf {
-		UtsNameBuf {
+	pub fn new(a1: CString, a2: CString, a3: CString, a4: CString, a5: CString) -> Self {
+		Self {
 			sysname: a1,
 			nodename: a2,
 			release: a3,

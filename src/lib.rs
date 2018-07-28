@@ -18,7 +18,7 @@
 
 
 /*!
-Name and information about the current kernel.
+Library for displaying information about the system. Implemented only for Linux.
 
 # Print
 ```
@@ -133,11 +133,11 @@ cluuname = { version = "*", features = ["enable_domainname"] }
 use std::ffi::CStr;
 
 
-pub mod hash_version;
+pub mod hash;
 pub mod uts_struct;
 pub mod display_cstr;
 
-use hash_version::HashVersion;
+use hash::HashVersion;
 
 use std::fmt::Debug;
 use std::fmt::Display;
@@ -220,7 +220,7 @@ pub trait UtsName: Hash + HashVersion + Display + Debug + Hash + PartialEq + Eq 
 
 
 
-///Getting and creating a custom uname.
+///Getting information about the system.
 pub mod build {
 	use uts_struct::slice::UtsNameSlice;
 	use uts_struct::buf::UtsNameBuf;
@@ -228,7 +228,7 @@ pub mod build {
 	use UtsName;
 	
 	
-	///Create custom uname
+	///Create user information about the system
 	///```
 	///sysname:	a1
 	///nodename:	a2
@@ -245,7 +245,7 @@ pub mod build {
 		UtsNameSlice::new(a1, a2, a3, a4, a5, a6)
 	}
 	
-	///Create custom uname
+	///Create user information about the system
 	///```
 	///sysname:	a1
 	///nodename:	a2
@@ -262,7 +262,7 @@ pub mod build {
 		UtsNameSlice::new(a1, a2, a3, a4, a5)
 	}
 		
-	///Getting the current uname
+	///Getting system information about the current machine
 	#[inline]
 	pub fn this_machine() -> Result<impl UtsName, i32> {
 		UtsNameBuf::this_machine()
@@ -321,7 +321,7 @@ pub mod build {
 }
 
 
-///Getting the current uname.
+///Getting system information about the current machine
 ///```
 ///extern crate cluuname;
 ///use cluuname::uname;
@@ -336,7 +336,7 @@ pub fn uname() -> Result<impl UtsName, i32> {
 	build::this_machine()
 }
 
-///Create custom uname.
+///Create user information about the system
 ///```
 ///sysname:	a1
 ///nodename:	a2
@@ -353,7 +353,7 @@ pub fn custom_uname<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, 
 	build::custom(a1, a2, a3, a4, a5, a6)
 }
 
-///Create custom uname.
+///Create user information about the system
 ///```
 ///sysname:	a1
 ///nodename:	a2
