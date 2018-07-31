@@ -58,32 +58,40 @@ impl UtsNameBuf {
 			result => Err(result),
 		}
 	}
+	pub fn update_libc(mut utsname: libc::utsname) -> Result<Self, i32> {
+		match unsafe { libc::uname(&mut utsname) } {
+			0 => Ok(
+				Self::from(utsname)
+			),
+			result => Err(result),
+		}
+	}
 }
 
 impl UtsName for UtsNameBuf {
-	#[inline]
+	#[inline(always)]
 	fn as_sysname(&self) -> &CStr {
 		&self.sysname
 	}
-	#[inline]
+	#[inline(always)]
 	fn as_nodename(&self) -> &CStr {
 		&self.nodename
 	}
-	#[inline]
+	#[inline(always)]
 	fn as_release(&self) -> &CStr {
 		&self.release
 	}
-	#[inline]
+	#[inline(always)]
 	fn as_version(&self) -> &CStr {
 		&self.version
 	}
-	#[inline]
+	#[inline(always)]
 	fn as_machine(&self) -> &CStr {
 		&self.machine
 	}
 	
 	#[cfg(feature = "enable_domainname")]
-	#[inline]
+	#[inline(always)]
 	fn as_domainname(&self) -> &CStr {
 		&self.domainname
 	}
@@ -111,8 +119,10 @@ impl fmt::Display for UtsNameBuf {
 
 
 impl From< libc::utsname > for UtsNameBuf {
-	fn from(uts: libc::utsname) -> UtsNameBuf {
+	fn from(uts: libc::utsname) -> Self {
 		let sysname = Box::new(uts.sysname);
+		//1 1 1 1 0 0 0 0 0 0 0 0 0
+
 		let nodename = Box::new(uts.nodename);
 		let release = Box::new(uts.release);
 		let version = Box::new(uts.version);
@@ -122,7 +132,7 @@ impl From< libc::utsname > for UtsNameBuf {
 		let domainname = Box::new(uts.domainname);
 		
 		
-		let result = unsafe { UtsNameBuf {
+		let result = unsafe { Self {
 			sysname:	CString::from_raw(sysname.as_ptr() as *mut c_char),
 			nodename:	CString::from_raw(nodename.as_ptr() as *mut c_char),
 			release:	CString::from_raw(release.as_ptr() as *mut c_char),
@@ -132,6 +142,12 @@ impl From< libc::utsname > for UtsNameBuf {
 			#[cfg(feature = "enable_domainname")]
 			domainname:	CString::from_raw(domainname.as_ptr() as *mut c_char),
 		}};
+
+		//Why there is no leakage?
+		//
+		//CString becomes a destructor!!!
+		//And the values of CString are not released before the time
+		//
 		
 		mem::forget(sysname);
 		mem::forget(nodename);
@@ -150,8 +166,8 @@ impl From< libc::utsname > for UtsNameBuf {
 #[cfg(feature = "enable_domainname")]
 impl From< (CString, CString, CString, CString, CString, CString) > for UtsNameBuf {
 	#[inline]
-	fn from(uts: (CString, CString, CString, CString, CString, CString)) -> UtsNameBuf {
-		UtsNameBuf::new(uts.0, uts.1, uts.2, uts.3, uts.4, uts.5)
+	fn from(uts: (CString, CString, CString, CString, CString, CString)) -> Self {
+		Self::new(uts.0, uts.1, uts.2, uts.3, uts.4, uts.5)
 	}
 }
 
@@ -159,12 +175,25 @@ impl From< (CString, CString, CString, CString, CString, CString) > for UtsNameB
 #[cfg(not(feature = "enable_domainname"))]
 impl From< (CString, CString, CString, CString, CString) > for UtsNameBuf {
 	#[inline]
-	fn from(uts: (CString, CString, CString, CString, CString)) -> UtsNameBuf {
-		UtsNameBuf::new(uts.0, uts.1, uts.2, uts.3, uts.4)
+	fn from(uts: (CString, CString, CString, CString, CString)) -> Self {
+		Self::new(uts.0, uts.1, uts.2, uts.3, uts.4)
 	}
 }
 
 
+#[cfg(feature = "enable_domainname")]
+impl Into< (CString, CString, CString, CString, CString, CString) > for UtsNameBuf {
+	#[inline]
+	fn into(self) -> (CString, CString, CString, CString, CString, CString) {
+		(self.sysname, self.nodename, self.release, self.version, self.machine, self.domainname)
+	}
+}
 
-
+#[cfg(not(feature = "enable_domainname"))]
+impl Into< (CString, CString, CString, CString, CString) > for UtsNameBuf {
+	#[inline]
+	fn into(self) -> (CString, CString, CString, CString, CString) {
+		(self.sysname, self.nodename, self.release, self.version, self.machine)
+	}
+}
 

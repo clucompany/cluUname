@@ -46,29 +46,29 @@ impl<'a> UtsNameSlice<'a> {
 
 
 impl<'a> UtsName for UtsNameSlice<'a> {
-	#[inline]
+	#[inline(always)]
 	fn as_sysname(&self) -> &CStr {
 		self.sysname
 	}
-	#[inline]
+	#[inline(always)]
 	fn as_nodename(&self) -> &CStr {
 		self.nodename
 	}
-	#[inline]
+	#[inline(always)]
 	fn as_release(&self) -> &CStr {
 		self.release
 	}
-	#[inline]
+	#[inline(always)]
 	fn as_version(&self) -> &CStr {
 		self.version
 	}
-	#[inline]
+	#[inline(always)]
 	fn as_machine(&self) -> &CStr {
 		self.machine
 	}
 	
 	#[cfg(feature = "enable_domainname")]
-	#[inline]
+	#[inline(always)]
 	fn as_domainname(&self) -> &CStr {
 		self.domainname
 	}
@@ -106,5 +106,20 @@ impl<'a> From< (&'a CStr, &'a CStr, &'a CStr, &'a CStr, &'a CStr) > for UtsNameS
 	#[inline]
 	fn from(uts: (&'a CStr, &'a CStr, &'a CStr, &'a CStr, &'a CStr)) -> UtsNameSlice<'a> {
 		UtsNameSlice::new(uts.0, uts.1, uts.2, uts.3, uts.4)
+	}
+}
+
+
+#[cfg(feature = "enable_domainname")]
+impl<'a> Into< (&'a CStr, &'a CStr, &'a CStr, &'a CStr, &'a CStr, &'a CStr) > for UtsNameSlice<'a> {
+	fn into(self) -> (&'a CStr, &'a CStr, &'a CStr, &'a CStr, &'a CStr, &'a CStr) {
+		(self.sysname, self.nodename, self.release, self.version, self.machine, self.domainname)
+	}
+}
+
+#[cfg(not(feature = "enable_domainname"))]
+impl<'a> Into< (&'a CStr, &'a CStr, &'a CStr, &'a CStr, &'a CStr) > for UtsNameSlice<'a> {
+	fn into(self) -> (&'a CStr, &'a CStr, &'a CStr, &'a CStr, &'a CStr) {
+		(self.sysname, self.nodename, self.release, self.version, self.machine)
 	}
 }

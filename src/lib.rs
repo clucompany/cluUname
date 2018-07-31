@@ -1,3 +1,4 @@
+#![feature(try_from)]
 //Copyright 2018 #UlinProject Денис Котляров
 
 //Licensed under the Apache License, Version 2.0 (the "License");
@@ -144,7 +145,7 @@ use std::fmt::Display;
 
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use display_cstr::DisplayCStr;
+use display_cstr::DisplaySliceCStr;
 
 ///Basic uname trait
 pub trait UtsName: Hash + HashVersion + Display + Debug + Hash + PartialEq + Eq + PartialOrd + Ord + Clone {
@@ -177,45 +178,41 @@ pub trait UtsName: Hash + HashVersion + Display + Debug + Hash + PartialEq + Eq 
 	
 	#[inline]
 	///Display trait for sysname.
-	fn display_sysname<'r>(&'r self) -> DisplayCStr<'r> {
-		DisplayCStr::new(self.as_sysname())
+	fn display_sysname<'r>(&'r self) -> DisplaySliceCStr<'r> {
+		DisplaySliceCStr::new(self.as_sysname())
 	}
 	
 	///Display trait for nodename.
 	#[inline]
-	fn display_nodename<'r>(&'r self) -> DisplayCStr<'r> {
-		DisplayCStr::new(self.as_nodename())
+	fn display_nodename<'r>(&'r self) -> DisplaySliceCStr<'r> {
+		DisplaySliceCStr::new(self.as_nodename())
 	}
 	
 	///Display trait for release.
 	#[inline]
-	fn display_release<'r>(&'r self) -> DisplayCStr<'r> {
-		DisplayCStr::new(self.as_release())
+	fn display_release<'r>(&'r self) -> DisplaySliceCStr<'r> {
+		DisplaySliceCStr::new(self.as_release())
 	}
 	
 	///Display trait for version.
 	#[inline]
-	fn display_version<'r>(&'r self) -> DisplayCStr<'r> {
-		DisplayCStr::new(self.as_version())
+	fn display_version<'r>(&'r self) -> DisplaySliceCStr<'r> {
+		DisplaySliceCStr::new(self.as_version())
 	}
 	
 	///Display trait for machine.
 	#[inline]
-	fn display_machine<'r>(&'r self) -> DisplayCStr<'r> {
-		DisplayCStr::new(self.as_machine())
+	fn display_machine<'r>(&'r self) -> DisplaySliceCStr<'r> {
+		DisplaySliceCStr::new(self.as_machine())
 	}
 
 	///Display trait for domainname.
 	#[cfg(feature = "enable_domainname")]
 	#[inline]
-	fn display_domainname<'r>(&'r self) -> DisplayCStr<'r> {
-		DisplayCStr::new(self.as_domainname())
+	fn display_domainname<'r>(&'r self) -> DisplaySliceCStr<'r> {
+		DisplaySliceCStr::new(self.as_domainname())
 	}
-	
 }
-
-
-
 
 
 
@@ -225,8 +222,7 @@ pub mod build {
 	use uts_struct::slice::UtsNameSlice;
 	use uts_struct::buf::UtsNameBuf;
 	use std::ffi::CStr;
-	use UtsName;
-	
+	use UtsName;	
 	
 	///Create user information about the system
 	///```
@@ -267,7 +263,8 @@ pub mod build {
 	pub fn this_machine() -> Result<impl UtsName, i32> {
 		UtsNameBuf::this_machine()
 	}
-	
+
+
 	///"Linux" "cluComp" "2.16-localhost" "#1 SMP PREEMPT Sat Mar 31 23:59:18 UTC 2008" "x86" "(none)"
 	///```
 	///sysname:	cstr!("Linux")
