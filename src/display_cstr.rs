@@ -48,6 +48,7 @@ impl<'a> DisplaySliceCStr<'a> {
 			cstr: cstr
 		}
 	}
+	#[inline]
 	pub fn new_impl(cstr: &'a CStr) -> impl DisplayCStr + 'a {
 		Self {
 			cstr: cstr

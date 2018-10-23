@@ -2,6 +2,7 @@
 
 #![feature(plugin)]
 #![plugin(clucstr)]
+#[allow(plugin_as_library)]
 extern crate clucstr;
 use std::ffi::CStr;
 

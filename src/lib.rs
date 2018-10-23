@@ -1,4 +1,3 @@
-#![feature(try_from)]
 //Copyright 2018 #UlinProject Денис Котляров
 
 //Licensed under the Apache License, Version 2.0 (the "License");
@@ -131,6 +130,8 @@ cluuname = { version = "*", features = ["enable_domainname"] }
 #![feature(plugin)]
 #![plugin(clucstr)]
 
+use uts_struct::slice::UtsNameSlice;
+use uts_struct::buf::UtsNameBuf;
 use std::ffi::CStr;
 
 
@@ -222,7 +223,6 @@ pub mod build {
 	use uts_struct::slice::UtsNameSlice;
 	use uts_struct::buf::UtsNameBuf;
 	use std::ffi::CStr;
-	use UtsName;	
 	
 	///Create user information about the system
 	///```
@@ -237,7 +237,7 @@ pub mod build {
 	///```
 	#[cfg(feature = "enable_domainname")]
 	#[inline]
-	pub fn custom<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr, a6: &'a CStr) -> impl UtsName + 'a {
+	pub fn custom<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr, a6: &'a CStr) -> UtsNameSlice<'a> {
 		UtsNameSlice::new(a1, a2, a3, a4, a5, a6)
 	}
 	
@@ -254,13 +254,13 @@ pub mod build {
 	///```
 	#[cfg(not(feature = "enable_domainname"))]
 	#[inline]
-	pub fn custom<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr) -> impl UtsName + 'a {
+	pub fn custom<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr) -> UtsNameSlice<'a> {
 		UtsNameSlice::new(a1, a2, a3, a4, a5)
 	}
 		
 	///Getting system information about the current machine
 	#[inline]
-	pub fn this_machine() -> Result<impl UtsName, i32> {
+	pub fn this_machine() -> Result<UtsNameBuf, i32> {
 		UtsNameBuf::this_machine()
 	}
 
@@ -276,7 +276,7 @@ pub mod build {
 	///#[cfg(feature = "enable_domainname")]
 	///domainname:	cstr!("(none)")
 	///```
-	pub fn linux_216_86() -> impl UtsName + 'static {
+	pub fn linux_216_86() -> UtsNameSlice<'static> {
 		custom (
 			cstr!("Linux"),
 			cstr!("cluComp"),
@@ -301,7 +301,7 @@ pub mod build {
 	///domainname:	cstr!("(none)")
 	///```
 	///
-	pub fn linux_415_86_64() -> impl UtsName + 'static {
+	pub fn linux_415_86_64() -> UtsNameSlice<'static> {
 		custom (
 			cstr!("Linux"),
 			cstr!("cluComp"),
@@ -329,7 +329,7 @@ pub mod build {
 ///	//"Linux" "cluComp" "4.15.15-1-zen" "#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018" "x86_64"
 ///}
 #[inline]
-pub fn uname() -> Result<impl UtsName, i32> {
+pub fn uname() -> Result<UtsNameBuf, i32> {
 	build::this_machine()
 }
 
@@ -346,7 +346,7 @@ pub fn uname() -> Result<impl UtsName, i32> {
 ///```
 #[cfg(feature = "enable_domainname")]
 #[inline]
-pub fn custom_uname<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr, a6: &'a CStr) -> impl UtsName + 'a {
+pub fn custom_uname<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr, a6: &'a CStr) -> UtsNameSlice<'a> {
 	build::custom(a1, a2, a3, a4, a5, a6)
 }
 
@@ -363,17 +363,17 @@ pub fn custom_uname<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, 
 ///```
 #[cfg(not(feature = "enable_domainname"))]
 #[inline]
-pub fn custom_uname<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr) -> impl UtsName + 'a {
+pub fn custom_uname<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr) -> UtsNameSlice<'a> {
 	build::custom(a1, a2, a3, a4, a5)
 }
 
 #[inline]
-pub fn uname_hash<I: UtsName>(uts: &I) -> u64 {
+pub fn uname_hash<I: UtsName>(uts: I) -> u64 {
 	uts.uname_hash()
 }
 
 #[inline]
-pub fn version_hash<I: UtsName>(uts: &I) -> u64 {
+pub fn version_hash<I: UtsName>(uts: I) -> u64 {
 	uts.version_hash()
 }
 
