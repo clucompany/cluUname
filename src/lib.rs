@@ -127,9 +127,12 @@ cluuname = { version = "*", features = ["enable_domainname"] }
 ```
 
 */
+
+
 #![feature(plugin)]
 #![plugin(clucstr)]
 
+use display_cstr::DisplaySliceCStr;
 use uts_struct::slice::UtsNameSlice;
 use uts_struct::buf::UtsNameBuf;
 use std::ffi::CStr;
@@ -146,7 +149,6 @@ use std::fmt::Display;
 
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use display_cstr::DisplaySliceCStr;
 
 ///Basic uname trait
 pub trait UtsName: Hash + HashVersion + Display + Debug + Hash + PartialEq + Eq + PartialOrd + Ord + Clone {
@@ -214,8 +216,51 @@ pub trait UtsName: Hash + HashVersion + Display + Debug + Hash + PartialEq + Eq 
 		DisplaySliceCStr::new(self.as_domainname())
 	}
 }
+impl<'a, T: UtsName> UtsName for &'a T {
+	#[inline(always)]
+	fn as_sysname(&self) -> &CStr { (*self).as_sysname() }
+			
+	#[inline(always)]
+	fn as_nodename(&self) -> &CStr { (*self).as_nodename() }
 
+	#[inline(always)]
+	fn as_release(&self) -> &CStr { (*self).as_release() }
 
+	#[inline(always)]
+	fn as_version(&self) -> &CStr { (*self).as_version() }
+
+	#[inline(always)]
+	fn as_machine(&self) -> &CStr { (*self).as_machine() }
+
+	#[inline(always)]
+	#[cfg(feature = "enable_domainname")]
+	fn as_domainname(&self) -> &CStr { (*self).as_domainname() }
+			
+	#[inline(always)]
+	fn uname_hash(&self) -> u64  { (*self).uname_hash() }
+
+	#[inline(always)]
+	fn version_hash(&self) -> u64  { (*self).version_hash() }
+			
+	#[inline(always)]
+	fn display_sysname<'r>(&'r self) -> DisplaySliceCStr<'r> { (*self).display_sysname() }
+			
+	#[inline(always)]
+	fn display_nodename<'r>(&'r self) -> DisplaySliceCStr<'r> { (*self).display_nodename() }
+			
+	#[inline(always)]
+	fn display_release<'r>(&'r self) -> DisplaySliceCStr<'r> { (*self).display_release() }
+			
+	#[inline(always)]
+	fn display_version<'r>(&'r self) -> DisplaySliceCStr<'r> { (*self).display_version() }
+			
+	#[inline(always)]
+	fn display_machine<'r>(&'r self) -> DisplaySliceCStr<'r> { (*self).display_machine() }
+
+	#[cfg(feature = "enable_domainname")]
+	#[inline(always)]
+	fn display_domainname<'r>(&'r self) -> DisplaySliceCStr<'r>  { (*self).display_domainname() }
+}
 
 
 ///Getting information about the system.

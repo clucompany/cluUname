@@ -16,6 +16,21 @@ pub trait HashVersion {
 	fn hash_version<H: Hasher>(&self, state: &mut H);
 }
 
+impl<'a, T: HashVersion> HashVersion for &'a T {
+	#[inline(always)]
+	fn hash_version<H: Hasher>(&self, state: &mut H) {
+		(*self).hash_version(state)
+	}
+}
+impl<'a, T: HashVersion> HashVersion for &'a mut T {
+	#[inline(always)]
+	fn hash_version<H: Hasher>(&self, state: &mut H) {
+		(**self).hash_version(state)
+	}
+}
+
+
+
 //buf
 impl HashVersion for UtsNameBuf {
 	fn hash_version<H: Hasher>(&self, state: &mut H) {
@@ -26,25 +41,8 @@ impl HashVersion for UtsNameBuf {
 }
 
 
-impl<'a> HashVersion for &'a UtsNameBuf {
-	fn hash_version<H: Hasher>(&self, state: &mut H) {
-		self.as_sysname().hash(state);
-		self.as_release().hash(state);
-		self.as_version().hash(state);
-	}
-}
-
-
 //slice
 impl<'a> HashVersion for UtsNameSlice<'a> {
-	fn hash_version<H: Hasher>(&self, state: &mut H) {
-		self.as_sysname().hash(state);
-		self.as_release().hash(state);
-		self.as_version().hash(state);
-	}
-}
-
-impl<'a> HashVersion for &'a UtsNameSlice<'a> {
 	fn hash_version<H: Hasher>(&self, state: &mut H) {
 		self.as_sysname().hash(state);
 		self.as_release().hash(state);

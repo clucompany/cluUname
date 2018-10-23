@@ -97,36 +97,6 @@ impl UtsName for UtsNameBuf {
 	}
 }
 
-impl<'a> UtsName for &'a UtsNameBuf {
-	#[inline(always)]
-	fn as_sysname(&self) -> &CStr {
-		&self.sysname
-	}
-	#[inline(always)]
-	fn as_nodename(&self) -> &CStr {
-		&self.nodename
-	}
-	#[inline(always)]
-	fn as_release(&self) -> &CStr {
-		&self.release
-	}
-	#[inline(always)]
-	fn as_version(&self) -> &CStr {
-		&self.version
-	}
-	#[inline(always)]
-	fn as_machine(&self) -> &CStr {
-		&self.machine
-	}
-	
-	#[cfg(feature = "enable_domainname")]
-	#[inline(always)]
-	fn as_domainname(&self) -> &CStr {
-		&self.domainname
-	}
-}
-
-
 impl fmt::Display for UtsNameBuf {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		let sysname = self.display_sysname();

@@ -35,6 +35,54 @@ pub trait DisplayCStr: Display + Debug {
 	}
 }
 
+impl<'l, CSTR: DisplayCStr> DisplayCStr for &'l CSTR {
+	#[inline(always)]
+	fn iter_mut_result<'a, F: FnMut(u8) -> Result<(), T>, T: 'a>(&self, function: F) -> Result<(), T> { (*self).iter_mut_result(function) }
+	
+	#[inline(always)]
+	fn iter_result<'a, F: Fn(u8) -> Result<(), T>, T: 'a>(&self, function: F) -> Result<(), T> { (*self).iter_result(function) }
+
+	#[inline(always)]
+	fn iter_char_mut_result<'a, F: FnMut(char) -> Result<(), T>, T: 'a>(&self, function: F) -> Result<(), T> { (*self).iter_char_mut_result(function) }
+	#[inline(always)]
+	fn iter_char_result<'a, F: Fn(char) -> Result<(), T>, T: 'a>(&self, function: F) -> Result<(), T> { (*self).iter_char_result(function) }
+
+	#[inline(always)]
+	fn iter_mut<F: FnMut(u8)>(&self, function: F) { (*self).iter_mut(function) }
+	
+	#[inline(always)]
+	fn iter<F: Fn(u8)>(&self, function: F) { (*self).iter(function) }
+
+	#[inline(always)]
+	fn iter_char_mut<F: FnMut(char)>(&self, function: F) { (*self).iter_char_mut(function) }
+	#[inline(always)]
+	fn iter_char<F: Fn(char)>(&self, function: F) { (*self).iter_char(function) }
+}
+
+impl<'l, CSTR: DisplayCStr> DisplayCStr for &'l mut CSTR {
+	#[inline(always)]
+	fn iter_mut_result<'a, F: FnMut(u8) -> Result<(), T>, T: 'a>(&self, function: F) -> Result<(), T> { (**self).iter_mut_result(function) }
+	
+	#[inline(always)]
+	fn iter_result<'a, F: Fn(u8) -> Result<(), T>, T: 'a>(&self, function: F) -> Result<(), T> { (**self).iter_result(function) }
+
+	#[inline(always)]
+	fn iter_char_mut_result<'a, F: FnMut(char) -> Result<(), T>, T: 'a>(&self, function: F) -> Result<(), T> { (**self).iter_char_mut_result(function) }
+	#[inline(always)]
+	fn iter_char_result<'a, F: Fn(char) -> Result<(), T>, T: 'a>(&self, function: F) -> Result<(), T> { (**self).iter_char_result(function) }
+
+	#[inline(always)]
+	fn iter_mut<F: FnMut(u8)>(&self, function: F) { (**self).iter_mut(function) }
+	
+	#[inline(always)]
+	fn iter<F: Fn(u8)>(&self, function: F) { (**self).iter(function) }
+
+	#[inline(always)]
+	fn iter_char_mut<F: FnMut(char)>(&self, function: F) { (**self).iter_char_mut(function) }
+	#[inline(always)]
+	fn iter_char<F: Fn(char)>(&self, function: F) { (**self).iter_char(function) }
+}
+
 
 #[derive(Debug)]
 pub struct DisplaySliceCStr<'a> {
@@ -157,7 +205,6 @@ impl<'a> Display for DisplaySliceCStr<'a> {
 		Ok( () )
 	}
 }
-
 
 
 
