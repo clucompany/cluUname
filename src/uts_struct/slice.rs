@@ -1,8 +1,10 @@
 
 
-use uts_struct::buf::UtsNameBuf;
+use crate::uts_struct::buf::UtsNameBuf;
+use crate::UtsName;
+
+
 use std::ffi::CStr;
-use UtsName;
 use std::fmt;
 
 
@@ -21,7 +23,7 @@ pub struct UtsNameSlice<'a> {
 impl<'a> UtsNameSlice<'a> {
 	#[cfg(feature = "enable_domainname")]
 	#[inline]
-	pub fn new(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr, a6: &'a CStr) -> Self {
+	pub const fn new(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr, a6: &'a CStr) -> Self {
 		Self {
 			sysname: a1,
 			nodename: a2,
@@ -34,7 +36,7 @@ impl<'a> UtsNameSlice<'a> {
 	
 	#[cfg(not(feature = "enable_domainname"))]
 	#[inline]
-	pub fn new(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr) -> Self {
+	pub const fn new(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr) -> Self {
 		Self {
 			sysname: a1,
 			nodename: a2,
@@ -142,27 +144,34 @@ impl<'a> From< &'a UtsNameBuf > for UtsNameSlice<'a> {
 		let machine = uts.as_machine();
 		
 		#[cfg(feature = "enable_domainname")]
-		let domainname = self.as_domainname();
+		let domainname = uts.as_domainname();
 		
-		#[cfg(feature = "enable_domainname")]
-		return UtsNameSlice::new(
+		
+		UtsNameSlice::new(
 			sysname,
 			nodename,
 			release,
 			version,
 			machine,
 
+			#[cfg(feature = "enable_domainname")]
 			domainname
-		);
+		)
+	}
+}
 
-		#[cfg(not(feature = "enable_domainname"))]
-		return UtsNameSlice::new(
-			sysname,
-			nodename,
-			release,
-			version,
-			machine,
 
-		);
+impl<'a> Into<UtsNameBuf> for UtsNameSlice<'a> {
+	fn into(self) -> UtsNameBuf {
+		UtsNameBuf::new(
+			self.sysname.into(),
+			self.nodename.into(),
+			self.release.into(),
+			self.version.into(),
+			self.machine.into(),
+
+			#[cfg(feature = "enable_domainname")]
+			self.domainname.into(),
+		)
 	}
 }

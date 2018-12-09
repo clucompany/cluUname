@@ -1,9 +1,10 @@
 
-extern crate libc;
+use crate::uts_struct::slice::UtsNameSlice;
+use std::io::Error;
+use crate::UtsName;
 
 use std::ffi::{CString, CStr};
 use std::fmt;
-use UtsName;
 use std::os::raw::c_char;
 use std::mem;
 
@@ -24,7 +25,7 @@ impl UtsNameBuf {
 	
 	#[cfg(feature = "enable_domainname")]
 	#[inline]
-	pub fn new(a1: CString, a2: CString, a3: CString, a4: CString, a5: CString, a6: CString) -> Self {
+	pub const fn new(a1: CString, a2: CString, a3: CString, a4: CString, a5: CString, a6: CString) -> Self {
 		Self {
 			sysname: a1,
 			nodename: a2,
@@ -37,7 +38,7 @@ impl UtsNameBuf {
 	
 	#[cfg(not(feature = "enable_domainname"))]
 	#[inline]
-	pub fn new(a1: CString, a2: CString, a3: CString, a4: CString, a5: CString) -> Self {
+	pub const fn new(a1: CString, a2: CString, a3: CString, a4: CString, a5: CString) -> Self {
 		Self {
 			sysname: a1,
 			nodename: a2,
@@ -48,23 +49,28 @@ impl UtsNameBuf {
 	}
 	
 	
-	pub fn this_machine() -> Result<Self, i32> {
+	pub fn this_machine() -> Result<Self, Error> {
 		let mut utsname: libc::utsname = unsafe { mem::uninitialized() };
 		
 		match unsafe { libc::uname(&mut utsname) } {
-			0 => Ok(
-				Self::from(utsname)
-			),
-			result => Err(result),
+			0 => {},
+			_ => return Err(Error::last_os_error()),
 		}
+
+		Ok(Self::from(utsname))
 	}
-	pub fn update_libc(mut utsname: libc::utsname) -> Result<Self, i32> {
+	pub fn update_libc(mut utsname: libc::utsname) -> Result<Self, Error> {
 		match unsafe { libc::uname(&mut utsname) } {
-			0 => Ok(
-				Self::from(utsname)
-			),
-			result => Err(result),
+			0 => {},
+			_ => return Err(Error::last_os_error()),
 		}
+
+		Ok(Self::from(utsname))
+	}
+
+
+	pub fn as_utsname<'a>(&'a self) -> UtsNameSlice<'a> {
+		UtsNameSlice::new(&self.sysname, &self.nodename, &self.release, &self.version, &self.machine)
 	}
 }
 
@@ -196,4 +202,3 @@ impl Into< (CString, CString, CString, CString, CString) > for UtsNameBuf {
 		(self.sysname, self.nodename, self.release, self.version, self.machine)
 	}
 }
-

@@ -132,17 +132,18 @@ cluuname = { version = "*", features = ["enable_domainname"] }
 #![feature(plugin)]
 #![plugin(clucstr)]
 
-use display_cstr::DisplaySliceCStr;
-use uts_struct::slice::UtsNameSlice;
-use uts_struct::buf::UtsNameBuf;
+use std::io::Error;
+use crate::display_cstr::DisplaySliceCStr;
+use crate::uts_struct::UtsNameSlice;
+use crate::uts_struct::UtsNameBuf;
 use std::ffi::CStr;
 
 
-pub mod hash;
+mod hash;
 pub mod uts_struct;
 pub mod display_cstr;
 
-use hash::HashVersion;
+pub use self::hash::*;
 
 use std::fmt::Debug;
 use std::fmt::Display;
@@ -171,11 +172,13 @@ pub trait UtsName: Hash + HashVersion + Display + Debug + Hash + PartialEq + Eq 
 	fn uname_hash(&self) -> u64 {
 		let mut hasher = DefaultHasher::new();
 		self.hash(&mut hasher);
+
 		hasher.finish()  
 	}
 	fn version_hash(&self) -> u64 {
 		let mut hasher = DefaultHasher::new();
 		self.hash_version(&mut hasher);
+		
 		hasher.finish()  
 	}
 	
@@ -265,8 +268,9 @@ impl<'a, T: UtsName> UtsName for &'a T {
 
 ///Getting information about the system.
 pub mod build {
-	use uts_struct::slice::UtsNameSlice;
-	use uts_struct::buf::UtsNameBuf;
+	use std::io::Error;
+	use crate::uts_struct::UtsNameSlice;
+	use crate::uts_struct::UtsNameBuf;
 	use std::ffi::CStr;
 	
 	///Create user information about the system
@@ -305,7 +309,7 @@ pub mod build {
 		
 	///Getting system information about the current machine
 	#[inline]
-	pub fn this_machine() -> Result<UtsNameBuf, i32> {
+	pub fn this_machine() -> Result<UtsNameBuf, Error> {
 		UtsNameBuf::this_machine()
 	}
 
@@ -374,7 +378,7 @@ pub mod build {
 ///	//"Linux" "cluComp" "4.15.15-1-zen" "#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018" "x86_64"
 ///}
 #[inline]
-pub fn uname() -> Result<UtsNameBuf, i32> {
+pub fn uname() -> Result<UtsNameBuf, Error> {
 	build::this_machine()
 }
 

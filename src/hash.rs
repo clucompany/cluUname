@@ -3,11 +3,12 @@
 Additional hash implementations for uname
 */
 
+use crate::uts_struct::UtsNameSlice;
+use crate::uts_struct::UtsNameBuf;
+use crate::UtsName;
 
 use std::hash::{Hash, Hasher};
-use uts_struct::slice::UtsNameSlice;
-use uts_struct::buf::UtsNameBuf;
-use UtsName;
+
 
 
 ///Hashing the kernel versions (Sysname + Release + Version)
