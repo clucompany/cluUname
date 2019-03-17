@@ -2,7 +2,6 @@
 
 extern crate cluuname;
 use cluuname::uname;
-use cluuname::UtsName;
 
 
 pub fn main() {

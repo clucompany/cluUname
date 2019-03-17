@@ -1,14 +1,9 @@
 
 
-#![feature(plugin)]
-#![plugin(clucstr)]
-#[allow(plugin_as_library)]
-extern crate clucstr;
 use std::ffi::CStr;
 
 extern crate cluuname;
 use cluuname::uname;
-use cluuname::UtsName;
 use cluuname::build::custom;
 
 pub fn main() {
@@ -23,28 +18,29 @@ pub fn main() {
 	
 	{//2
 		let hash_version_test = custom (
-			cstr!("Linux"),
-			cstr!("cluComp"),
-			cstr!("2.16-localhost"),	// <<<
-			cstr!("#1 SMP PREEMPT Sat Mar 31 23:59:18 UTC 2008"), // <<<
-			cstr!("x86"),
+			CStr::from_bytes_with_nul(b"Linux\0").unwrap(),
+			CStr::from_bytes_with_nul(b"\0").unwrap(),
+			CStr::from_bytes_with_nul(b"2.16-localhost\0").unwrap(),	// <<<
+			CStr::from_bytes_with_nul(b"#1 SMP PREEMPT Sat Mar 31 23:59:18 UTC 2008\0").unwrap(), // <<<
+			CStr::from_bytes_with_nul(b"x86\0").unwrap(),
 			
 			#[cfg(feature = "enable_domainname")]
-			cstr!("(none)"),
-		).version_hash();
+			CStr::from_bytes_with_nul(b"(none)\0").unwrap(),
+		);
 		
 		
 		let hash_version_test_1 = custom (
-			cstr!("Linux"),
-			cstr!(""),
-			cstr!("2.16-localhost"),
-			cstr!("#1 SMP PREEMPT Sat Mar 31 23:59:18 UTC 2008"),
-			cstr!(""),
+			"Linux",
+			&None::<&str>,
+			"2.16-localhost",	// <<<
+			"#1 SMP PREEMPT Sat Mar 31 23:59:18 UTC 2008", // <<<
+			&b"x86"[..],
 			
 			#[cfg(feature = "enable_domainname")]
-			cstr!(""),
-		).version_hash();
+			"(none)",
+		);
 		
-		assert_eq!(hash_version_test, hash_version_test_1);
+		println!("{} == {}", hash_version_test, hash_version_test_1);
+		assert_eq!(hash_version_test.uname_hash(), hash_version_test_1.uname_hash());
 	}
 }

@@ -127,30 +127,31 @@ cluuname = { version = "*", features = ["enable_domainname"] }
 ```
 
 */
-
-
-#![feature(plugin)]
-#![plugin(clucstr)]
-
 use std::io::Error;
-use crate::display_cstr::DisplaySliceCStr;
-use crate::uts_struct::UtsNameSlice;
-use crate::uts_struct::UtsNameBuf;
-use std::ffi::CStr;
-
 
 mod hash;
-pub mod uts_struct;
-pub mod display_cstr;
-
 pub use self::hash::*;
 
-use std::fmt::Debug;
-use std::fmt::Display;
+mod display;
+pub use self::display::*;
 
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
+mod uts_struct;
+pub use self::uts_struct::*;
 
+mod element;
+pub use self::element::*;
+
+mod type_element;
+pub use self::type_element::*;
+
+
+/*fn null_u8() -> &'static [u8] {
+	static EMPTY_U8: &'static [u8] = b"";
+	EMPTY_U8
+}*/
+
+
+/*
 ///Basic uname trait
 pub trait UtsName: Hash + HashVersion + Display + Debug + Hash + PartialEq + Eq + PartialOrd + Ord + Clone {
 	///Get sysname for this structure.
@@ -184,94 +185,140 @@ pub trait UtsName: Hash + HashVersion + Display + Debug + Hash + PartialEq + Eq 
 	
 	#[inline]
 	///Display trait for sysname.
-	fn display_sysname<'r>(&'r self) -> DisplaySliceCStr<'r> {
-		DisplaySliceCStr::new(self.as_sysname())
+	fn display_sysname<'r>(&'r self) -> DisplayUts<&'r CStr> {
+		From::from(self.as_sysname())
 	}
 	
 	///Display trait for nodename.
 	#[inline]
-	fn display_nodename<'r>(&'r self) -> DisplaySliceCStr<'r> {
-		DisplaySliceCStr::new(self.as_nodename())
+	fn display_nodename<'r>(&'r self) -> DisplayUts<&'r CStr> {
+		From::from(self.as_nodename())
 	}
 	
 	///Display trait for release.
 	#[inline]
-	fn display_release<'r>(&'r self) -> DisplaySliceCStr<'r> {
-		DisplaySliceCStr::new(self.as_release())
+	fn display_release<'r>(&'r self) -> DisplayUts<&'r CStr> {
+		From::from(self.as_release())
 	}
 	
 	///Display trait for version.
 	#[inline]
-	fn display_version<'r>(&'r self) -> DisplaySliceCStr<'r> {
-		DisplaySliceCStr::new(self.as_version())
+	fn display_version<'r>(&'r self) -> DisplayUts<&'r CStr> {
+		From::from(self.as_version())
 	}
 	
 	///Display trait for machine.
 	#[inline]
-	fn display_machine<'r>(&'r self) -> DisplaySliceCStr<'r> {
-		DisplaySliceCStr::new(self.as_machine())
+	fn display_machine<'r>(&'r self) -> DisplayUts<&'r CStr> {
+		From::from(self.as_machine())
 	}
 
 	///Display trait for domainname.
 	#[cfg(feature = "enable_domainname")]
 	#[inline]
-	fn display_domainname<'r>(&'r self) -> DisplaySliceCStr<'r> {
-		DisplaySliceCStr::new(self.as_domainname())
+	fn display_domainname<'r>(&'r self) -> DisplayUts<&'r CStr> {
+		From::from(self.as_domainname())
 	}
 }
+
 impl<'a, T: UtsName> UtsName for &'a T {
 	#[inline(always)]
-	fn as_sysname(&self) -> &CStr { (*self).as_sysname() }
+	fn as_sysname(&self) -> &CStr { T::as_sysname(self) }
 			
 	#[inline(always)]
-	fn as_nodename(&self) -> &CStr { (*self).as_nodename() }
+	fn as_nodename(&self) -> &CStr { T::as_nodename(self) }
 
 	#[inline(always)]
-	fn as_release(&self) -> &CStr { (*self).as_release() }
+	fn as_release(&self) -> &CStr { T::as_release(self) }
 
 	#[inline(always)]
-	fn as_version(&self) -> &CStr { (*self).as_version() }
+	fn as_version(&self) -> &CStr { T::as_version(self) }
 
 	#[inline(always)]
-	fn as_machine(&self) -> &CStr { (*self).as_machine() }
+	fn as_machine(&self) -> &CStr { T::as_machine(self) }
 
 	#[inline(always)]
 	#[cfg(feature = "enable_domainname")]
-	fn as_domainname(&self) -> &CStr { (*self).as_domainname() }
+	fn as_domainname(&self) -> &CStr { T::as_domainname(self) }
 			
 	#[inline(always)]
-	fn uname_hash(&self) -> u64  { (*self).uname_hash() }
+	fn uname_hash(&self) -> u64 { T::uname_hash(self) }
 
 	#[inline(always)]
-	fn version_hash(&self) -> u64  { (*self).version_hash() }
+	fn version_hash(&self) -> u64 { T::version_hash(self) }
 			
 	#[inline(always)]
-	fn display_sysname<'r>(&'r self) -> DisplaySliceCStr<'r> { (*self).display_sysname() }
+	fn display_sysname<'r>(&'r self) -> DisplayUts<&'r CStr> { T::display_sysname(self) }
 			
 	#[inline(always)]
-	fn display_nodename<'r>(&'r self) -> DisplaySliceCStr<'r> { (*self).display_nodename() }
+	fn display_nodename<'r>(&'r self) -> DisplayUts<&'r CStr> { T::display_nodename(self) }
 			
 	#[inline(always)]
-	fn display_release<'r>(&'r self) -> DisplaySliceCStr<'r> { (*self).display_release() }
+	fn display_release<'r>(&'r self) -> DisplayUts<&'r CStr> { T::display_release(self) }
 			
 	#[inline(always)]
-	fn display_version<'r>(&'r self) -> DisplaySliceCStr<'r> { (*self).display_version() }
+	fn display_version<'r>(&'r self) -> DisplayUts<&'r CStr> { T::display_version(self) }
 			
 	#[inline(always)]
-	fn display_machine<'r>(&'r self) -> DisplaySliceCStr<'r> { (*self).display_machine() }
+	fn display_machine<'r>(&'r self) -> DisplayUts<&'r CStr> { T::display_machine(self) }
 
 	#[cfg(feature = "enable_domainname")]
 	#[inline(always)]
-	fn display_domainname<'r>(&'r self) -> DisplaySliceCStr<'r>  { (*self).display_domainname() }
+	fn display_domainname<'r>(&'r self) -> DisplayUts<&'r CStr> { T::display_domainname(self) }
 }
 
+impl<T: UtsName> UtsName for Box<T> {
+	#[inline(always)]
+	fn as_sysname(&self) -> &CStr { T::as_sysname(self) }
+			
+	#[inline(always)]
+	fn as_nodename(&self) -> &CStr { T::as_nodename(self) }
+
+	#[inline(always)]
+	fn as_release(&self) -> &CStr { T::as_release(self) }
+
+	#[inline(always)]
+	fn as_version(&self) -> &CStr { T::as_version(self) }
+
+	#[inline(always)]
+	fn as_machine(&self) -> &CStr { T::as_machine(self) }
+
+	#[inline(always)]
+	#[cfg(feature = "enable_domainname")]
+	fn as_domainname(&self) -> &CStr { T::as_domainname(self) }
+			
+	#[inline(always)]
+	fn uname_hash(&self) -> u64 { T::uname_hash(self) }
+
+	#[inline(always)]
+	fn version_hash(&self) -> u64 { T::version_hash(self) }
+			
+	#[inline(always)]
+	fn display_sysname<'r>(&'r self) -> DisplayUts<&'r CStr> { T::display_sysname(self) }
+			
+	#[inline(always)]
+	fn display_nodename<'r>(&'r self) -> DisplayUts<&'r CStr> { T::display_nodename(self) }
+			
+	#[inline(always)]
+	fn display_release<'r>(&'r self) -> DisplayUts<&'r CStr> { T::display_release(self) }
+			
+	#[inline(always)]
+	fn display_version<'r>(&'r self) -> DisplayUts<&'r CStr> { T::display_version(self) }
+			
+	#[inline(always)]
+	fn display_machine<'r>(&'r self) -> DisplayUts<&'r CStr> { T::display_machine(self) }
+
+	#[cfg(feature = "enable_domainname")]
+	#[inline(always)]
+	fn display_domainname<'r>(&'r self) -> DisplayUts<&'r CStr> { T::display_domainname(self) }
+}
+*/
 
 ///Getting information about the system.
 pub mod build {
-	use std::io::Error;
-	use crate::uts_struct::UtsNameSlice;
-	use crate::uts_struct::UtsNameBuf;
-	use std::ffi::CStr;
+	use crate::uts_struct::UtsNameAlwaysType;
+	use crate::element::UtsElement;
+	use crate::uts_struct::UtsName;
 	
 	///Create user information about the system
 	///```
@@ -285,13 +332,13 @@ pub mod build {
 	///domainname:	a6
 	///```
 	#[cfg(feature = "enable_domainname")]
-	#[inline]
-	pub fn custom<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr, a6: &'a CStr) -> UtsNameSlice<'a> {
-		UtsNameSlice::new(a1, a2, a3, a4, a5, a6)
+	#[inline(always)]
+	pub fn custom<Q,W,E,R,T,Y>(a1: Q, a2: W, a3: E, a4: R, a5: T, a6: Y) -> UtsName<Q,W,E,R,T,Y> where Q: UtsElement, W: UtsElement, E: UtsElement, R: UtsElement, T: UtsElement, Y: UtsElement {
+		UtsName::new(a1, a2, a3, a4, a5, a6)
 	}
 	
 	///Create user information about the system
-	///```
+	///
 	///sysname:	a1
 	///nodename:	a2
 	///release:	a3
@@ -300,17 +347,11 @@ pub mod build {
 	///
 	///#[cfg(feature = "enable_domainname")]
 	///domainname:	a6
-	///```
+	///
 	#[cfg(not(feature = "enable_domainname"))]
-	#[inline]
-	pub fn custom<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr) -> UtsNameSlice<'a> {
-		UtsNameSlice::new(a1, a2, a3, a4, a5)
-	}
-		
-	///Getting system information about the current machine
-	#[inline]
-	pub fn this_machine() -> Result<UtsNameBuf, Error> {
-		UtsNameBuf::this_machine()
+	#[inline(always)]
+	pub fn custom<Q,W,E,R,T>(a1: Q, a2: W, a3: E, a4: R, a5: T)-> UtsName<Q,W,E,R,T>  where Q: UtsElement, W: UtsElement, E: UtsElement, R: UtsElement, T: UtsElement {
+		UtsName::new(a1, a2, a3, a4, a5)
 	}
 
 
@@ -325,16 +366,16 @@ pub mod build {
 	///#[cfg(feature = "enable_domainname")]
 	///domainname:	cstr!("(none)")
 	///```
-	pub fn linux_216_86() -> UtsNameSlice<'static> {
+	pub fn linux_216_86() -> UtsNameAlwaysType<&'static str> {
 		custom (
-			cstr!("Linux"),
-			cstr!("cluComp"),
-			cstr!("2.16-localhost"),
-			cstr!("#1 SMP PREEMPT Sat Mar 31 23:59:18 UTC 2008"),
-			cstr!("x86"),
+			"Linux",
+			"cluComp",
+			"2.16-localhost",
+			"#1 SMP PREEMPT Sat Mar 31 23:59:18 UTC 2008",
+			"x86",
 			
 			#[cfg(feature = "enable_domainname")]
-			cstr!("(none)"),
+			"(none)",
 		)
 	}
 	
@@ -350,20 +391,31 @@ pub mod build {
 	///domainname:	cstr!("(none)")
 	///```
 	///
-	pub fn linux_415_86_64() -> UtsNameSlice<'static> {
+	pub fn linux_415_86_64() -> UtsNameAlwaysType<&'static str> {
 		custom (
-			cstr!("Linux"),
-			cstr!("cluComp"),
-			cstr!("4.15.15-1-zen"),
-			cstr!("#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018"),
-			cstr!("x86_64"),
+			"Linux",
+			"cluComp",
+			"4.15.15-1-zen",
+			"#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018",
+			"x86_64",
 			
 			#[cfg(feature = "enable_domainname")]
-			cstr!("(none)"),
+			"(none)",
 		)
 	}
 	
-	
+	pub fn linux_420_86_64() -> UtsNameAlwaysType<&'static str> {
+		custom (
+			"Linux",
+			"cluComp",
+			"4.20.11-1-MANJARO",
+			"#1 SMP PREEMPT Wed Feb 20 23:19:36 UTC 2019",
+			"x86_64",
+			
+			#[cfg(feature = "enable_domainname")]
+			"(none)",
+		)
+	}
 }
 
 
@@ -377,9 +429,9 @@ pub mod build {
 ///	println!("{}", uname);
 ///	//"Linux" "cluComp" "4.15.15-1-zen" "#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018" "x86_64"
 ///}
-#[inline]
-pub fn uname() -> Result<UtsNameBuf, Error> {
-	build::this_machine()
+#[inline(always)]
+pub fn uname() -> Result<UtsNameThisMachine, Error> {
+	UtsNameThisMachine::this_machine()
 }
 
 ///Create user information about the system
@@ -394,8 +446,8 @@ pub fn uname() -> Result<UtsNameBuf, Error> {
 ///domainname:	a6
 ///```
 #[cfg(feature = "enable_domainname")]
-#[inline]
-pub fn custom_uname<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr, a6: &'a CStr) -> UtsNameSlice<'a> {
+#[inline(always)]
+pub fn custom_uname<Q, W, E, R, T, Y>(a1: Q, a2: W, a3: E, a4: R, a5: T, a6: Y) -> UtsName<Q, W, E, R, T, Y> where Q: UtsElement, W: UtsElement, E: UtsElement, R: UtsElement, T: UtsElement, Y: UtsElement {
 	build::custom(a1, a2, a3, a4, a5, a6)
 }
 
@@ -411,21 +463,22 @@ pub fn custom_uname<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, 
 ///domainname:	a6
 ///```
 #[cfg(not(feature = "enable_domainname"))]
-#[inline]
-pub fn custom_uname<'a>(a1: &'a CStr, a2: &'a CStr, a3: &'a CStr, a4: &'a CStr, a5: &'a CStr) -> UtsNameSlice<'a> {
+#[inline(always)]
+pub fn custom_uname<Q,W,E,R,T>(a1: Q, a2: W, a3: E, a4: R, a5: T) -> UtsName<Q,W,E,R,T>  where Q: UtsElement, W: UtsElement, E: UtsElement, R: UtsElement, T: UtsElement {
 	build::custom(a1, a2, a3, a4, a5)
 }
 
-#[inline]
-pub fn uname_hash<I: UtsName>(uts: I) -> u64 {
+/*
+#[inline(always)]
+pub fn uname_hash(uts: &UtsName) -> u64 {
 	uts.uname_hash()
 }
 
-#[inline]
-pub fn version_hash<I: UtsName>(uts: I) -> u64 {
+#[inline(always)]
+pub fn version_hash(uts: &UtsName) -> u64 {
 	uts.version_hash()
 }
-
+*/
 
 
 
@@ -433,36 +486,64 @@ pub fn version_hash<I: UtsName>(uts: I) -> u64 {
 mod tests {
 	use super::*;
 	
-	
 	#[test]
 	#[cfg(target_os = "linux")]
 	fn linux() {
 		if let Ok(uts) = uname() {
-			assert_eq!(uts.as_sysname(), cstr!("Linux"));
+			assert_eq!(*uts.as_sysname(), b"Linux"[..]);
 		}
 	}
 	
 	#[test]
 	fn custom() {
 		let uts = custom_uname (
-			cstr!("Linux"),
-			cstr!("cluComp"),
-			cstr!("4.15.15-1-zen"),
-			cstr!("#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018"),
-			cstr!("x86_64"),
+			"Linux",
+			"cluComp",
+			"4.15.15-1-zen",
+			"#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018",
+			"x86_64",
 			
 			#[cfg(feature = "enable_domainname")]
-			cstr!("(none)"),
+			"(none)",
 		);
 		
-		assert_eq!(uts.as_sysname(), cstr!("Linux"));
-		assert_eq!(uts.as_nodename(), cstr!("cluComp"));
-		assert_eq!(uts.as_release(), cstr!("4.15.15-1-zen"));
-		assert_eq!(uts.as_version(), cstr!("#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018"));
-		assert_eq!(uts.as_machine(), cstr!("x86_64"));
+		assert_eq!(uts.as_sysname(), "Linux");
+		assert_eq!(uts.as_nodename(), "cluComp");
+		assert_eq!(uts.as_release(), "4.15.15-1-zen");
+		assert_eq!(uts.as_version(), "#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018");
+		assert_eq!(uts.as_machine(), "x86_64");
 		
 		#[cfg(feature = "enable_domainname")]
-		assert_eq!(uts.as_domainname(), cstr!("(none)"));
+		assert_eq!(uts.as_domainname(), "(none)");
+	}
+	
+	#[test]
+	fn hash() {
+		let uts_str = custom_uname (
+			"Linux",
+			"",
+			"4.15.15-1-zen",
+			"#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018",
+			"",
+			
+			#[cfg(feature = "enable_domainname")]
+			"(none)",
+		);
+		
+		
+		let uts_vec_byte = custom_uname (
+			"Linux".as_bytes().to_vec(),
+			&None::<&str>,
+			&b"4.15.15-1-zen"[..],
+			"#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018",
+			(),
+			
+			#[cfg(feature = "enable_domainname")]
+			"(none)",
+		);
+		
+		assert_eq!(uts_str.uname_hash(), uts_vec_byte.uname_hash());
+		assert_eq!(uts_str.version_hash(), uts_vec_byte.version_hash());
 	}
 }
 
