@@ -29,27 +29,27 @@ impl<Q, W, E, R, T> From<(Q, W, E, R, T)> for UtsName<Q, W, E, R, T> where Q: Ut
 
 impl<'a, Q:'a, W:'a, E:'a, R:'a, T:'a> UtsName<Q, W, E, R, T> where Q: UtsElement, W: UtsElement, E: UtsElement, R: UtsElement, T: UtsElement{	
 	#[inline(always)]
-	pub fn as_sysname(&self) -> &(dyn UtsElement + 'a) {
+	pub const fn as_sysname(&self) -> &(dyn UtsElement + 'a) {
 		&self.sysname
 	}
 	
 	#[inline(always)]
-	pub fn as_nodename(&self) -> &(dyn UtsElement + 'a) {
+	pub const fn as_nodename(&self) -> &(dyn UtsElement + 'a) {
 		&self.nodename
 	}
 	
 	#[inline(always)]
-	pub fn as_release(&self) -> &(dyn UtsElement + 'a) {
+	pub const fn as_release(&self) -> &(dyn UtsElement + 'a) {
 		&self.release
 	}
 	
 	#[inline(always)]
-	pub fn as_version(&self) -> &(dyn UtsElement + 'a) {
+	pub const fn as_version(&self) -> &(dyn UtsElement + 'a) {
 		&self.version
 	}
 	
 	#[inline(always)]
-	pub fn as_machine(&self) -> &(dyn UtsElement + 'a) {
+	pub const fn as_machine(&self) -> &(dyn UtsElement + 'a) {
 		&self.machine
 	}
 	
@@ -71,36 +71,36 @@ impl<'a, Q:'a, W:'a, E:'a, R:'a, T:'a> UtsName<Q, W, E, R, T> where Q: UtsElemen
 	
 	#[inline]
 	///Display trait for sysname.
-	pub fn display_sysname<'r>(&'r self) -> DisplayUts<&Q> {
-		From::from(&self.sysname)
+	pub const fn display_sysname<'r>(&'r self) -> DisplayUts<&Q> {
+		DisplayUts::new(&self.sysname)
 	}
 	
 	///Display trait for nodename.
 	#[inline]
-	pub fn display_nodename<'r>(&'r self) -> DisplayUts<&W> {
-		From::from(&self.nodename)
+	pub const fn display_nodename<'r>(&'r self) -> DisplayUts<&W> {
+		DisplayUts::new(&self.nodename)
 	}
 	
 	///Display trait for release.
 	#[inline]
-	pub fn display_release<'r>(&'r self) -> DisplayUts<&E> {
-		From::from(&self.release)
+	pub const fn display_release<'r>(&'r self) -> DisplayUts<&E> {
+		DisplayUts::new(&self.release)
 	}
 	
 	///Display trait for version.
 	#[inline]
-	pub fn display_version<'r>(&'r self) -> DisplayUts<&R> {
-		From::from(&self.version)
+	pub const fn display_version<'r>(&'r self) -> DisplayUts<&R> {
+		DisplayUts::new(&self.version)
 	}
 	
 	///Display trait for machine.
 	#[inline]
-	pub fn display_machine<'r>(&'r self) -> DisplayUts<&T> {
-		From::from(&self.machine)
+	pub const fn display_machine<'r>(&'r self) -> DisplayUts<&T> {
+		DisplayUts::new(&self.machine)
 	}
 	
-	
-	pub fn new(q:Q, w:W, e:E, r:R, t:T) -> Self {
+	#[inline]
+	pub const fn new(q:Q, w:W, e:E, r:R, t:T) -> Self {
 		UtsName {
 			sysname:	q,
 			nodename:	w,
@@ -178,7 +178,7 @@ impl<Q, W, E, R, T> Hash for UtsName<Q, W, E, R, T> where Q: UtsElement, W: UtsE
 
 impl<T> UtsNameAlwaysType<T> where T: UtsElement {
 	#[inline]
-	pub fn as_array(&self) -> [&T; 5] {
+	pub const fn as_array(&self) -> [&T; 5] {
 		[
 			&self.sysname,
 			&self.nodename,
@@ -189,7 +189,7 @@ impl<T> UtsNameAlwaysType<T> where T: UtsElement {
 	}
 	
 	#[inline(always)]
-	pub fn as_array0(&self) -> [&T; 5] {
+	pub const fn as_array0(&self) -> [&T; 5] {
 		self.as_array()
 	}
 	

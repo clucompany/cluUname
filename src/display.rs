@@ -10,14 +10,14 @@ pub struct DisplayUts<T>(T);
 
 impl<T: UtsElement> DisplayUts<T> {
 	#[inline]
-	pub fn new(a: T) -> Self {
+	pub const fn new(a: T) -> Self {
 		DisplayUts(a)
 	}
 }
 
 impl<'a, T: 'a + UtsElement> DisplayUts<T> {
 	#[inline(always)]
-	pub fn as_element(&self) -> &(dyn UtsElement + 'a) {
+	pub const fn as_element(&self) -> &(dyn UtsElement + 'a) {
 		&self.0
 	}
 }
