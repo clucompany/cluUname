@@ -165,7 +165,7 @@ pub mod build {
 	///```
 	#[cfg(feature = "enable_domainname")]
 	#[inline(always)]
-	pub fn custom<Q,W,E,R,T,Y>(a1: Q, a2: W, a3: E, a4: R, a5: T, a6: Y) -> UtsName<Q,W,E,R,T,Y> where Q: UtsElement, W: UtsElement, E: UtsElement, R: UtsElement, T: UtsElement, Y: UtsElement {
+	pub const fn custom<Q,W,E,R,T,Y>(a1: Q, a2: W, a3: E, a4: R, a5: T, a6: Y) -> UtsName<Q,W,E,R,T,Y> where Q: UtsElement, W: UtsElement, E: UtsElement, R: UtsElement, T: UtsElement, Y: UtsElement {
 		UtsName::new(a1, a2, a3, a4, a5, a6)
 	}
 	
@@ -182,7 +182,7 @@ pub mod build {
 	///
 	#[cfg(not(feature = "enable_domainname"))]
 	#[inline(always)]
-	pub fn custom<Q,W,E,R,T>(a1: Q, a2: W, a3: E, a4: R, a5: T)-> UtsName<Q,W,E,R,T>  where Q: UtsElement, W: UtsElement, E: UtsElement, R: UtsElement, T: UtsElement {
+	pub const fn custom<Q,W,E,R,T>(a1: Q, a2: W, a3: E, a4: R, a5: T)-> UtsName<Q,W,E,R,T>  where Q: UtsElement, W: UtsElement, E: UtsElement, R: UtsElement, T: UtsElement {
 		UtsName::new(a1, a2, a3, a4, a5)
 	}
 
@@ -198,7 +198,7 @@ pub mod build {
 	///#[cfg(feature = "enable_domainname")]
 	///domainname:	cstr!("(none)")
 	///```
-	pub fn linux_216_86() -> UtsNameAlwaysType<&'static str> {
+	pub const fn linux_216_86() -> UtsNameAlwaysType<&'static str> {
 		custom (
 			"Linux",
 			"cluComp",
@@ -223,7 +223,7 @@ pub mod build {
 	///domainname:	cstr!("(none)")
 	///```
 	///
-	pub fn linux_415_86_64() -> UtsNameAlwaysType<&'static str> {
+	pub const fn linux_415_86_64() -> UtsNameAlwaysType<&'static str> {
 		custom (
 			"Linux",
 			"cluComp",
@@ -236,7 +236,7 @@ pub mod build {
 		)
 	}
 	
-	pub fn linux_420_86_64() -> UtsNameAlwaysType<&'static str> {
+	pub const fn linux_420_86_64() -> UtsNameAlwaysType<&'static str> {
 		custom (
 			"Linux",
 			"cluComp",
@@ -279,7 +279,7 @@ pub fn uname() -> Result<UtsNameThisMachine, Error> {
 ///```
 #[cfg(feature = "enable_domainname")]
 #[inline(always)]
-pub fn custom_uname<Q, W, E, R, T, Y>(a1: Q, a2: W, a3: E, a4: R, a5: T, a6: Y) -> UtsName<Q, W, E, R, T, Y> where Q: UtsElement, W: UtsElement, E: UtsElement, R: UtsElement, T: UtsElement, Y: UtsElement {
+pub const fn custom_uname<Q, W, E, R, T, Y>(a1: Q, a2: W, a3: E, a4: R, a5: T, a6: Y) -> UtsName<Q, W, E, R, T, Y> where Q: UtsElement, W: UtsElement, E: UtsElement, R: UtsElement, T: UtsElement, Y: UtsElement {
 	build::custom(a1, a2, a3, a4, a5, a6)
 }
 
@@ -296,7 +296,7 @@ pub fn custom_uname<Q, W, E, R, T, Y>(a1: Q, a2: W, a3: E, a4: R, a5: T, a6: Y) 
 ///```
 #[cfg(not(feature = "enable_domainname"))]
 #[inline(always)]
-pub fn custom_uname<Q,W,E,R,T>(a1: Q, a2: W, a3: E, a4: R, a5: T) -> UtsName<Q,W,E,R,T>  where Q: UtsElement, W: UtsElement, E: UtsElement, R: UtsElement, T: UtsElement {
+pub const fn custom_uname<Q,W,E,R,T>(a1: Q, a2: W, a3: E, a4: R, a5: T) -> UtsName<Q,W,E,R,T>  where Q: UtsElement, W: UtsElement, E: UtsElement, R: UtsElement, T: UtsElement {
 	build::custom(a1, a2, a3, a4, a5)
 }
 

@@ -104,7 +104,7 @@ impl<'a, Q:'a, W:'a, E:'a, R:'a, T:'a, Y: 'a> UtsName<Q, W, E, R, T, Y> where Q:
 	
 	#[inline]
 	pub const fn new(q:Q, w:W, e:E, r:R, t:T, y:Y) -> Self {
-		UtsName {
+		Self {
 			sysname:	q,
 			nodename:	w,
 			release:	e,
