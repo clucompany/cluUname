@@ -12,4 +12,4 @@ matrix:
     - rust: nightly
 script:
   - cargo build --verbose
-  - cargo test --verbose
+  - cargo test --lib --verbose
