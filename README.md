@@ -10,7 +10,7 @@ Library for displaying information about the system. Implemented only for Linux.
 
 # Print
 
-```
+```rust
 extern crate cluuname;
 use cluuname::uname;
 
@@ -23,7 +23,7 @@ fn main() {
 
 # 2Print
 
-```
+```rust
 extern crate cluuname;
 use cluuname::uname;
 use cluuname::UtsName;
@@ -46,7 +46,7 @@ fn nodename<T: UtsName>(uname: T) {
 
 # CustomPrint
 
-```
+```rust
 extern crate cluuname;
 use cluuname::uname;
 use cluuname::UtsName;
@@ -67,7 +67,7 @@ fn main() {
 
 # Hash + Hash Version
 
-```
+```rust
 extern crate cluuname;
 use cluuname::uname;
 use cluuname::UtsName;
@@ -87,7 +87,7 @@ fn main() {
 
 # CustomUname
 
-```
+```rust
 #![feature(plugin)]
 #![plugin(clucstr)]
 extern crate cluuname;
