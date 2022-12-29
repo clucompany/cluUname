@@ -1,6 +1,4 @@
-#![feature(const_fn)]
-
-//Copyright 2019 #UlinProject Денис Котляров
+//Copyright 2019-2022 #UlinProject Denis Kotlyarov (Денис Котляров)
 
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -14,10 +12,8 @@
 //See the License for the specific language governing permissions and
 // limitations under the License.
 
-
-//#Ulin Project 1718
+// #Ulin Project 2022
 //
-
 
 /*!
 Library for displaying information about the system. Implemented only for Linux.
@@ -129,252 +125,414 @@ cluuname = { version = "*", features = ["enable_domainname"] }
 ```
 
 */
-use std::io::Error;
+#![no_std]
 
-mod hash;
-pub use self::hash::*;
+#![allow(non_snake_case)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
-mod display;
-pub use self::display::*;
+use ::core::ffi::CStr;
+use ::core::fmt::Display;
+use ::core::fmt::Formatter;
+use ::core::fmt::Write;
+#[cfg_attr(docsrs, doc(cfg(feature = "box")))]
+#[cfg( any(test, feature = "box") )]
+use crate::beh::def_box_linux::BoxArrayLinuxUTSName;
+#[cfg_attr(docsrs, doc(cfg(feature = "cstring")))]
+#[cfg( any(test, feature = "cstring") )]
+use crate::beh::def_cstring_linux::CStringLinuxUTSName;
+#[cfg_attr(docsrs, doc(cfg(feature = "rs")))]
+#[cfg( any(test, feature = "rs") )]
+use crate::beh::def_rs_linux::StringLinuxUTSName;
+use crate::beh::def_linux::ArrayLinuxUTSName;
+use crate::beh::def_linux::LinuxUTSNameType;
+use crate::beh::def_linux::RawLinuxUTSNameType;
+use crate::core::AsUname;
+use crate::core::AsPtrUname;
+use crate::core::UnameData;
+use crate::core::UnameErr;
+use ::core::hash::Hash;
+//use ::core::fmt::Debug;
 
-mod uts_struct;
-pub use self::uts_struct::*;
+pub mod beh {
+	pub mod def_linux;
+	#[cfg_attr(docsrs, doc(cfg(feature = "box")))]
+	#[cfg( any(test, feature = "box") )]
+	pub mod def_box_linux;
+	#[cfg_attr(docsrs, doc(cfg(feature = "cstring")))]
+	#[cfg( any(test, feature = "cstring") )]
+	pub mod def_cstring_linux;
+	#[cfg_attr(docsrs, doc(cfg(feature = "rs")))]
+	#[cfg( any(test, feature = "rs") )]
+	pub mod def_rs_linux;
+}
 
-mod element;
-pub use self::element::*;
+mod macro_make;
+pub mod core;
 
-mod type_element;
-pub use self::type_element::*;
+#[repr(transparent)]
+pub struct Uname<D> where D: UnameData {
+	data: D::Data,
+}
 
-///Getting information about the system.
-pub mod build {
-	use crate::uts_struct::UtsNameAlwaysType;
-	use crate::element::UtsElement;
-	use crate::uts_struct::UtsName;
-	
-	///Create user information about the system
-	///```
-	///sysname:	a1
-	///nodename:	a2
-	///release:	a3
-	///version:	a4
-	///machine:	a5
-	///
-	///#[cfg(feature = "enable_domainname")]
-	///domainname:	a6
-	///```
-	#[cfg(feature = "enable_domainname")]
+/*impl<D> Debug for Uname<D> where D: UnameData {
+	fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+		Debug::fmt(&self.data, f)
+	}
+}*/
+
+impl<D> Hash for Uname<D> where D: UnameData {
 	#[inline(always)]
-	pub const fn custom<Q,W,E,R,T,Y>(a1: Q, a2: W, a3: E, a4: R, a5: T, a6: Y) -> UtsName<Q,W,E,R,T,Y> where Q: UtsElement, W: UtsElement, E: UtsElement, R: UtsElement, T: UtsElement, Y: UtsElement {
-		UtsName::new(a1, a2, a3, a4, a5, a6)
+	fn hash<H: ::core::hash::Hasher>(&self, state: &mut H) {
+		D::hash_data(self.as_data(), state)
 	}
-	
-	///Create user information about the system
-	///
-	///sysname:	a1
-	///nodename:	a2
-	///release:	a3
-	///version:	a4
-	///machine:	a5
-	///
-	///#[cfg(feature = "enable_domainname")]
-	///domainname:	a6
-	///
-	#[cfg(not(feature = "enable_domainname"))]
+}
+
+impl<D> Uname<D> where D: UnameData {
 	#[inline(always)]
-	pub const fn custom<Q,W,E,R,T>(a1: Q, a2: W, a3: E, a4: R, a5: T)-> UtsName<Q,W,E,R,T>  where Q: UtsElement, W: UtsElement, E: UtsElement, R: UtsElement, T: UtsElement {
-		UtsName::new(a1, a2, a3, a4, a5)
-	}
-
-
-	///"Linux" "cluComp" "2.16-localhost" "#1 SMP PREEMPT Sat Mar 31 23:59:18 UTC 2008" "x86" "(none)"
-	///```
-	///sysname:	cstr!("Linux")
-	///nodename:	cstr!("cluComp")
-	///release:	cstr!("2.16-localhost")
-	///version:	cstr!("#1 SMP PREEMPT Sat Mar 31 23:59:18 UTC 2008")
-	///machine:	cstr!("x86")
-	///
-	///#[cfg(feature = "enable_domainname")]
-	///domainname:	cstr!("(none)")
-	///```
-	pub const fn linux_216_86() -> UtsNameAlwaysType<&'static str> {
-		custom (
-			"Linux",
-			"cluComp",
-			"2.16-localhost",
-			"#1 SMP PREEMPT Sat Mar 31 23:59:18 UTC 2008",
-			"x86",
-			
-			#[cfg(feature = "enable_domainname")]
-			"(none)",
-		)
+	pub fn get_current() -> Result<Uname<D>, UnameErr> {
+		D::get_current()
 	}
 	
-	///"Linux" "cluComp" "4.15.15-1-zen" "#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018" "x86_64" "(none)"
-	///```
-	///sysname:	cstr!("Linux")
-	///nodename:	cstr!("cluComp")
-	///release:	cstr!("4.15.15-1-zen")
-	///version:	cstr!("#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018")
-	///machine:	cstr!("x86_64")
-	///
-	///#[cfg(feature = "enable_domainname")]
-	///domainname:	cstr!("(none)")
-	///```
-	///
-	pub const fn linux_415_86_64() -> UtsNameAlwaysType<&'static str> {
-		custom (
-			"Linux",
-			"cluComp",
-			"4.15.15-1-zen",
-			"#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018",
-			"x86_64",
-			
-			#[cfg(feature = "enable_domainname")]
-			"(none)",
-		)
+	#[inline(always)]
+	pub fn get_current_fn<R>(ok: impl FnOnce(Uname<D>) -> R, e: impl FnOnce(UnameErr) -> R) -> R {
+		D::get_current_fn(ok, e)
 	}
 	
-	pub const fn linux_420_86_64() -> UtsNameAlwaysType<&'static str> {
-		custom (
-			"Linux",
-			"cluComp",
-			"4.20.11-1-MANJARO",
-			"#1 SMP PREEMPT Wed Feb 20 23:19:36 UTC 2019",
-			"x86_64",
-			
-			#[cfg(feature = "enable_domainname")]
-			"(none)",
-		)
+	#[inline(always)]
+	pub fn get_current_or_empty() -> Uname<D> {
+		D::get_current_or_empty()
 	}
-}
-
-
-///Getting system information about the current machine
-///```
-///extern crate cluuname;
-///use cluuname::uname;
-///
-///fn main() {
-///	let uname = uname().unwrap();
-///	println!("{}", uname);
-///	//"Linux" "cluComp" "4.15.15-1-zen" "#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018" "x86_64"
-///}
-#[inline(always)]
-pub fn uname() -> Result<UtsNameThisMachine, Error> {
-	UtsNameThisMachine::this_machine()
-}
-
-///Create user information about the system
-///```
-///sysname:	a1
-///nodename:	a2
-///release:	a3
-///version:	a4
-///machine:	a5
-///
-///#[cfg(feature = "enable_domainname")]
-///domainname:	a6
-///```
-#[cfg(feature = "enable_domainname")]
-#[inline(always)]
-pub const fn custom_uname<Q, W, E, R, T, Y>(a1: Q, a2: W, a3: E, a4: R, a5: T, a6: Y) -> UtsName<Q, W, E, R, T, Y> where Q: UtsElement, W: UtsElement, E: UtsElement, R: UtsElement, T: UtsElement, Y: UtsElement {
-	build::custom(a1, a2, a3, a4, a5, a6)
-}
-
-///Create user information about the system
-///```
-///sysname:	a1
-///nodename:	a2
-///release:	a3
-///version:	a4
-///machine:	a5
-///
-///#[cfg(feature = "enable_domainname")]
-///domainname:	a6
-///```
-#[cfg(not(feature = "enable_domainname"))]
-#[inline(always)]
-pub const fn custom_uname<Q,W,E,R,T>(a1: Q, a2: W, a3: E, a4: R, a5: T) -> UtsName<Q,W,E,R,T>  where Q: UtsElement, W: UtsElement, E: UtsElement, R: UtsElement, T: UtsElement {
-	build::custom(a1, a2, a3, a4, a5)
-}
-
-/*
-#[inline(always)]
-pub fn uname_hash(uts: &UtsName) -> u64 {
-	uts.uname_hash()
-}
-
-#[inline(always)]
-pub fn version_hash(uts: &UtsName) -> u64 {
-	uts.version_hash()
-}
-*/
-
-
-
-#[cfg(test)]
-mod tests {
-	use super::*;
 	
-	#[test]
-	#[cfg(target_os = "linux")]
-	fn linux() {
-		if let Ok(uts) = uname() {
-			assert_eq!(*uts.as_sysname(), b"Linux"[..]);
+	#[inline]
+	pub const fn from(data: D::Data) -> Self {
+		Self {
+			data,
 		}
 	}
 	
-	#[test]
-	fn custom() {
-		let uts = custom_uname (
-			"Linux",
-			"cluComp",
-			"4.15.15-1-zen",
-			"#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018",
-			"x86_64",
-			
-			#[cfg(feature = "enable_domainname")]
-			"(none)",
-		);
-		
-		assert_eq!(uts.as_sysname(), "Linux");
-		assert_eq!(uts.as_nodename(), "cluComp");
-		assert_eq!(uts.as_release(), "4.15.15-1-zen");
-		assert_eq!(uts.as_version(), "#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018");
-		assert_eq!(uts.as_machine(), "x86_64");
-		
-		#[cfg(feature = "enable_domainname")]
-		assert_eq!(uts.as_domainname(), "(none)");
+	#[inline(always)]
+	pub const fn as_data(&self) -> &D::Data {
+		&self.data
 	}
 	
-	#[test]
-	fn hash() {
-		let uts_str = custom_uname (
-			"Linux",
-			"",
-			"4.15.15-1-zen",
-			"#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018",
-			"",
-			
-			#[cfg(feature = "enable_domainname")]
-			"(none)",
-		);
-		
-		
-		let uts_vec_byte = custom_uname (
-			"Linux".as_bytes().to_vec(),
-			&None::<&str>,
-			&b"4.15.15-1-zen"[..],
-			"#1 ZEN SMP PREEMPT Sat Mar 31 23:59:18 UTC 2018",
-			(),
-			
-			#[cfg(feature = "enable_domainname")]
-			"(none)",
-		);
-		
-		assert_eq!(uts_str.uname_hash(), uts_vec_byte.uname_hash());
-		assert_eq!(uts_str.version_hash(), uts_vec_byte.version_hash());
+	#[inline(always)]
+	pub /*const*/ fn as_mut_data(&mut self) -> &mut D::Data {
+		&mut self.data
 	}
+}
+
+#[repr(transparent)]
+struct _SlowSafeDisplay<'a>(&'a [u8]);
+
+impl<'a> Display for _SlowSafeDisplay<'a> {
+	fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), ::core::fmt::Error> {
+		for a in self.0.into_iter() {
+			for a in ::core::ascii::escape_default(*a) {
+				f.write_char(a as char)?;
+			}
+		}
+		
+		Ok( () )
+	}
+}
+
+impl<D> Uname<D> where D: UnameData + AsUname<[u8], Data = <D as UnameData>::Data> {
+	pub fn slow_write_to<W: Write>(&self, w: &mut W) -> ::core::fmt::Result {
+		write!(
+			w, "{} {} {} {} {} {}", 
+			_SlowSafeDisplay(self.as_sysname()), 
+			_SlowSafeDisplay(self.as_nodename()),
+			_SlowSafeDisplay(self.as_release()),
+			_SlowSafeDisplay(self.as_version()),
+			_SlowSafeDisplay(self.as_machine()),
+			_SlowSafeDisplay(self.as_domainname()),
+		)
+	}
+	
+	pub fn get_slow_display<'a>(&'a self) -> impl Display + 'a {
+		struct __FullDisplay<'a, D>(&'a Uname<D>) where D: UnameData + AsUname<[u8], Data = <D as UnameData>::Data>;
+		impl<'a, D> Display for __FullDisplay<'a, D> where D: UnameData + AsUname<[u8], Data = <D as UnameData>::Data> {
+			fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), ::core::fmt::Error> {
+				write!(
+					f, "{} {} {} {} {} {}", 
+					_SlowSafeDisplay(self.0.as_sysname()), 
+					_SlowSafeDisplay(self.0.as_nodename()),
+					_SlowSafeDisplay(self.0.as_release()),
+					_SlowSafeDisplay(self.0.as_version()),
+					_SlowSafeDisplay(self.0.as_machine()),
+					_SlowSafeDisplay(self.0.as_domainname()),
+				)
+			}
+		}
+		__FullDisplay(self)
+	}
+	
+	#[inline(always)]
+	pub fn as_sysname<'a>(&'a self) -> &'a [u8] {
+		D::as_sysname(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_nodename<'a>(&'a self) -> &'a [u8] {
+		D::as_nodename(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_release<'a>(&'a self) -> &'a [u8] {
+		D::as_release(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_version<'a>(&'a self) -> &'a [u8] {
+		D::as_version(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_machine<'a>(&'a self) -> &'a [u8] {
+		D::as_machine(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_domainname<'a>(&'a self) -> &'a [u8] {
+		D::as_domainname(&self.data)
+	}
+}
+
+impl<D> Uname<D> where D: UnameData + AsUname<CStr, Data = <D as UnameData>::Data> {
+	#[inline(always)]
+	pub fn as_cstr_sysname<'a>(&'a self) -> &'a CStr {
+		D::as_sysname(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_cstr_nodename<'a>(&'a self) -> &'a CStr {
+		D::as_nodename(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_cstr_release<'a>(&'a self) -> &'a CStr {
+		D::as_release(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_cstr_version<'a>(&'a self) -> &'a CStr {
+		D::as_version(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_cstr_machine<'a>(&'a self) -> &'a CStr {
+		D::as_machine(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_cstr_domainname<'a>(&'a self) -> &'a CStr {
+		D::as_domainname(&self.data)
+	}
+}
+
+impl<D> Display for Uname<D> where D: UnameData + AsUname<str, Data = <D as UnameData>::Data> {
+	#[inline(always)]
+	fn fmt(&self, f: &mut Formatter<'_>) -> ::core::fmt::Result {
+		Display::fmt(&self.get_display(), f)
+	}
+}
+
+impl<D> Uname<D> where D: UnameData + AsUname<str, Data = <D as UnameData>::Data> {
+	#[inline]
+	pub fn write_to<W: Write>(&self, w: &mut W) -> ::core::fmt::Result {
+		write!(
+			w, "{} {} {} {} {} {}", 
+			self.as_str_sysname(), 
+			self.as_str_nodename(),
+			self.as_str_release(),
+			self.as_str_version(),
+			self.as_str_machine(),
+			self.as_str_domainname(),
+		)
+	}
+	
+	pub fn get_display<'a>(&'a self) -> impl Display + 'a {
+		struct __FullDisplay<'a, D>(&'a Uname<D>) where D: UnameData + AsUname<str, Data = <D as UnameData>::Data>;
+		impl<'a, D> Display for __FullDisplay<'a, D> where D: UnameData + AsUname<str, Data = <D as UnameData>::Data> {
+			fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), ::core::fmt::Error> {
+				write!(
+					f, "{} {} {} {} {} {}", 
+					self.0.as_str_sysname(), 
+					self.0.as_str_nodename(),
+					self.0.as_str_release(),
+					self.0.as_str_version(),
+					self.0.as_str_machine(),
+					self.0.as_str_domainname(),
+				)
+			}
+		}
+		__FullDisplay(self)
+	}
+	
+	#[inline(always)]
+	pub fn as_str_sysname<'a>(&'a self) -> &'a str {
+		D::as_sysname(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_str_nodename<'a>(&'a self) -> &'a str {
+		D::as_nodename(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_str_release<'a>(&'a self) -> &'a str {
+		D::as_release(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_str_version<'a>(&'a self) -> &'a str {
+		D::as_version(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_str_machine<'a>(&'a self) -> &'a str {
+		D::as_machine(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_str_domainname<'a>(&'a self) -> &'a str {
+		D::as_domainname(&self.data)
+	}
+}
+
+impl<D> Uname<D> where D: UnameData + AsPtrUname<LinuxUTSNameType, Data = <D as UnameData>::Data> {
+	#[inline(always)]
+	pub fn as_ptr_sysname(&self) -> *const LinuxUTSNameType {
+		D::as_ptr_sysname(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_ptr_nodename(&self) -> *const LinuxUTSNameType {
+		D::as_ptr_nodename(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_ptr_release(&self) -> *const LinuxUTSNameType {
+		D::as_ptr_release(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_ptr_version(&self) -> *const LinuxUTSNameType {
+		D::as_ptr_version(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_ptr_machine(&self) -> *const LinuxUTSNameType {
+		D::as_ptr_machine(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_ptr_domainname(&self) -> *const LinuxUTSNameType {
+		D::as_ptr_domainname(&self.data)
+	}
+}
+
+impl<D> Uname<D> where D: UnameData + AsPtrUname<RawLinuxUTSNameType, Data = <D as UnameData>::Data> {
+	#[inline(always)]
+	pub fn as_rawptr_sysname(&self) -> *const RawLinuxUTSNameType {
+		D::as_ptr_sysname(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_rawptr_nodename(&self) -> *const RawLinuxUTSNameType {
+		D::as_ptr_nodename(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_rawptr_release(&self) -> *const RawLinuxUTSNameType {
+		D::as_ptr_release(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_rawptr_version(&self) -> *const RawLinuxUTSNameType {
+		D::as_ptr_version(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_rawptr_machine(&self) -> *const RawLinuxUTSNameType {
+		D::as_ptr_machine(&self.data)
+	}
+	
+	#[inline(always)]
+	pub fn as_rawptr_domainname(&self) -> *const RawLinuxUTSNameType {
+		D::as_ptr_domainname(&self.data)
+	}
+}
+
+#[inline]
+pub fn uname() -> Uname<ArrayLinuxUTSName> {
+	stack_uname()
+}
+
+#[inline(always)]
+pub fn stack_uname() -> Uname<ArrayLinuxUTSName> {
+	Uname::get_current_or_empty()
+}
+
+#[cfg_attr(docsrs, doc(cfg(feature = "box")))]
+#[cfg( any(test, feature = "box") )]
+#[inline]
+pub fn box_uname() -> Uname<BoxArrayLinuxUTSName> {
+	Uname::get_current_or_empty()
+}
+
+#[cfg_attr(docsrs, doc(cfg(feature = "cstring")))]
+#[cfg( any(test, feature = "cstring") )]
+#[inline]
+pub fn cstring_uname() -> Uname<CStringLinuxUTSName> {
+	Uname::get_current_or_empty()
+}
+
+#[cfg_attr(docsrs, doc(cfg(feature = "rs")))]
+#[cfg( any(test, feature = "rs") )]
+#[inline]
+pub fn rs_uname() -> Uname<StringLinuxUTSName> {
+	Uname::get_current_or_empty()
+}
+
+#[cfg_attr(docsrs, doc(cfg(feature = "rs")))]
+#[cfg( any(test, feature = "rs") )]
+#[inline]
+pub fn custom_rs_uname(
+	sysname: crate::beh::def_rs_linux::String, 
+	nodename: crate::beh::def_rs_linux::String,
+	release: crate::beh::def_rs_linux::String,
+	version: crate::beh::def_rs_linux::String,
+	machine: crate::beh::def_rs_linux::String,
+	domainname: crate::beh::def_rs_linux::String,
+) -> Uname<StringLinuxUTSName> {
+	Uname::from(crate::beh::def_rs_linux::StringUtsname::new(
+		sysname,
+		nodename,
+		release,
+		version,
+		machine,
+		domainname,
+	))
+}
+
+#[cfg_attr(docsrs, doc(cfg(feature = "cstring")))]
+#[cfg( any(test, feature = "cstring") )]
+#[inline]
+pub fn custom_cstring_uname(
+	sysname: crate::beh::def_cstring_linux::CString, 
+	nodename: crate::beh::def_cstring_linux::CString,
+	release: crate::beh::def_cstring_linux::CString,
+	version: crate::beh::def_cstring_linux::CString,
+	machine: crate::beh::def_cstring_linux::CString,
+	domainname: crate::beh::def_cstring_linux::CString,
+) -> Uname<CStringLinuxUTSName> {
+	Uname::from(crate::beh::def_cstring_linux::CStringUtsname::new(
+		sysname,
+		nodename,
+		release,
+		version,
+		machine,
+		domainname,
+	))
 }

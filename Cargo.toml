@@ -1,19 +1,31 @@
 [package]
 name = "cluuname"
-version = "0.2.8"
+version = "0.3.0"
 authors = ["Denis Kotlyarov (Денис Котляров) <denis2005991@gmail.com>"]
 repository = "https://github.com/clucompany/cluUname.git"
 license = "Apache-2.0"
 readme = "README.md"
-edition = "2018"
+edition = "2021"
 
 description = "Library for displaying information about the system"
 keywords = ["uname", "cluuname", "hostname", "clucompany"]
 categories = ["development-tools"]
 
-[features]
-enable_domainname = []
+# docs.rs-specific configuration
+[package.metadata.docs.rs]
+# document all features
+all-features = true
+# defines the configuration attribute `docsrs`
+rustdoc-args = ["--cfg", "docsrs"]
 
+[features]
+default = [
+	"rs"
+]
+
+rs = []
+cstring = []
+box = []
 
 [dependencies]
-libc = "0.2.62"
+libc = "0.2.139"
