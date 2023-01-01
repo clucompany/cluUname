@@ -17,7 +17,7 @@ use ::core::ops::DerefMut;
 
 make_uname_data! {
 	#[pub] BoxArrayLinuxUTSName(Box<libc::utsname>) {
-		// TODO, EXP STAB use of unstable library feature 'new_uninit'
+		// TODO, EXP STAB use of unstable library feature 'new_uninit'/'new_zeroed'
 		// see issue #6329
 		#[inline(always)] empty_data|| (Box::new(unsafe { core::mem::zeroed() })),
 		get_current|ok, err| {
@@ -32,6 +32,7 @@ make_uname_data! {
 				})),
 			}
 		},
+		#overload:
 		get_current_or_empty|| {
 			let mut utsname = Self::empty_data();
 			

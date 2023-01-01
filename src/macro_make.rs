@@ -16,6 +16,7 @@ macro_rules! make_uname_data {
 			get_current	|$get_current_ok:ident, $get_current_e: ident| $(($get_current_expr:expr))? $($get_current:block)?, // EXPR || BLOCK
 			
 			$(
+				#overload:
 				$(#[ $($get_current_or_empty_addition: tt)* ])*
 				get_current_or_empty|| $(($get_current_or_empty_expr:expr))? $($get_current_or_empty:block)?, // EXPR || BLOCK
 			)?

@@ -34,18 +34,18 @@ make_uname_data! {
 		},
 		get_current|ok, err|	{
 			Uname::<ArrayLinuxUTSName>::get_current_fn(
-				|mut cstrcurrent| {
-					let sysname = <ArrayLinuxUTSName as AsUname::<CStr>>::as_sysname(cstrcurrent.as_mut_data())
+				|cstrcurrent| {
+					let sysname = <ArrayLinuxUTSName as AsUname::<CStr>>::as_sysname(cstrcurrent.as_data())
 						.into();
-					let nodename = <ArrayLinuxUTSName as AsUname::<CStr>>::as_nodename(cstrcurrent.as_mut_data())
+					let nodename = <ArrayLinuxUTSName as AsUname::<CStr>>::as_nodename(cstrcurrent.as_data())
 						.into();
-					let release = <ArrayLinuxUTSName as AsUname::<CStr>>::as_release(cstrcurrent.as_mut_data())
+					let release = <ArrayLinuxUTSName as AsUname::<CStr>>::as_release(cstrcurrent.as_data())
 						.into();
-					let version = <ArrayLinuxUTSName as AsUname::<CStr>>::as_version(cstrcurrent.as_mut_data())
+					let version = <ArrayLinuxUTSName as AsUname::<CStr>>::as_version(cstrcurrent.as_data())
 						.into();
-					let machine = <ArrayLinuxUTSName as AsUname::<CStr>>::as_machine(cstrcurrent.as_mut_data())
+					let machine = <ArrayLinuxUTSName as AsUname::<CStr>>::as_machine(cstrcurrent.as_data())
 						.into();
-					let domainname = <ArrayLinuxUTSName as AsUname::<CStr>>::as_domainname(cstrcurrent.as_mut_data())
+					let domainname = <ArrayLinuxUTSName as AsUname::<CStr>>::as_domainname(cstrcurrent.as_data())
 						.into();
 					
 					let data = Self::from_data(CStringUtsname {
@@ -61,33 +61,6 @@ make_uname_data! {
 				},
 				|e| err(e)
 			)
-		},
-		get_current_or_empty||	{
-			let mut cstrcurrent: Uname<ArrayLinuxUTSName> = Uname::get_current_or_empty();
-			
-			let sysname = <ArrayLinuxUTSName as AsUname::<CStr>>::as_sysname(cstrcurrent.as_mut_data())
-				.into();
-			let nodename = <ArrayLinuxUTSName as AsUname::<CStr>>::as_nodename(cstrcurrent.as_mut_data())
-				.into();
-			let release = <ArrayLinuxUTSName as AsUname::<CStr>>::as_release(cstrcurrent.as_mut_data())
-				.into();
-			let version = <ArrayLinuxUTSName as AsUname::<CStr>>::as_version(cstrcurrent.as_mut_data())
-				.into();
-			let machine = <ArrayLinuxUTSName as AsUname::<CStr>>::as_machine(cstrcurrent.as_mut_data())
-				.into();
-			let domainname = <ArrayLinuxUTSName as AsUname::<CStr>>::as_domainname(cstrcurrent.as_mut_data())
-				.into();
-			
-			let data = CStringUtsname {
-				sysname,
-				nodename,
-				release,
-				version,
-				machine,
-				domainname
-			};
-				
-			Self::from_data(data)
 		},
 		#[inline(always)] from_data	|data| (Uname::from(data)),
 		

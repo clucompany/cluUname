@@ -26,6 +26,7 @@ make_uname_data! {
 				})),
 			}
 		},
+		#overload:
 		get_current_or_empty|| {
 			let mut utsname = Self::empty_data();
 			let _ignore_decode = unsafe { libc::uname(&mut utsname as _) };

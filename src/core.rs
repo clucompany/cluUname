@@ -38,7 +38,19 @@ pub enum UnameErr {
 	LibcErr(NonZeroI32)
 }
 
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+#[cfg( any(test, feature = "std") )]
+impl std::error::Error for UnameErr {
+	#[inline]
+	fn description(&self) -> &str {
+		match self {
+			Self::LibcErr(..) => "`libc::uname` returned invalid error.",
+		}
+	}
+}
+
 impl Display for UnameErr {
+	#[inline]
 	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 		match self {
 			Self::LibcErr(e) => write!(f, "`libc::uname` returned error {}.", e),

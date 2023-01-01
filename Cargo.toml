@@ -20,12 +20,13 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = [
-	"rs"
+	"rs",
 ]
 
 rs = []
 cstring = []
 box = []
+std = []
 
 [dependencies]
 libc = "0.2.139"

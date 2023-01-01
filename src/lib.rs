@@ -125,7 +125,7 @@ cluuname = { version = "*", features = ["enable_domainname"] }
 ```
 
 */
-#![no_std]
+#![cfg_attr(not(any(test, feature = "std")), no_std)]
 
 #![allow(non_snake_case)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
@@ -143,6 +143,9 @@ use crate::beh::def_cstring_linux::CStringLinuxUTSName;
 #[cfg_attr(docsrs, doc(cfg(feature = "rs")))]
 #[cfg( any(test, feature = "rs") )]
 use crate::beh::def_rs_linux::StringLinuxUTSName;
+#[cfg_attr(docsrs, doc(cfg(feature = "rs")))]
+#[cfg( any(test, feature = "rs") )]
+use crate::beh::def_rs_linux::CowStrLinuxUTSName;
 use crate::beh::def_linux::ArrayLinuxUTSName;
 use crate::beh::def_linux::LinuxUTSNameType;
 use crate::beh::def_linux::RawLinuxUTSNameType;
@@ -151,7 +154,7 @@ use crate::core::AsPtrUname;
 use crate::core::UnameData;
 use crate::core::UnameErr;
 use ::core::hash::Hash;
-//use ::core::fmt::Debug;
+use ::core::fmt::Debug;
 
 pub mod beh {
 	pub mod def_linux;
@@ -174,11 +177,20 @@ pub struct Uname<D> where D: UnameData {
 	data: D::Data,
 }
 
-/*impl<D> Debug for Uname<D> where D: UnameData {
+impl<D> Debug for Uname<D> where D: UnameData + AsUname<[u8], Data = <D as UnameData>::Data> {
 	fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-		Debug::fmt(&self.data, f)
+		let data = self.as_data();
+		
+		f.debug_struct("Uname")
+			.field("sysname", &D::as_sysname(data))
+			.field("nodename", &D::as_nodename(data))
+			.field("release", &D::as_release(data))
+			.field("version", &D::as_version(data))
+			.field("machine", &D::as_machine(data))
+			.field("domainname", &D::as_domainname(data))
+			.finish()
 	}
-}*/
+}
 
 impl<D> Hash for Uname<D> where D: UnameData {
 	#[inline(always)]
@@ -201,6 +213,11 @@ impl<D> Uname<D> where D: UnameData {
 	#[inline(always)]
 	pub fn get_current_or_empty() -> Uname<D> {
 		D::get_current_or_empty()
+	}
+	
+	#[inline]
+	pub fn empty() -> Uname<D> {
+		Self::from(D::empty_data())
 	}
 	
 	#[inline]
@@ -237,6 +254,17 @@ impl<'a> Display for _SlowSafeDisplay<'a> {
 }
 
 impl<D> Uname<D> where D: UnameData + AsUname<[u8], Data = <D as UnameData>::Data> {
+	#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+	#[cfg( any(test, feature = "std") )]
+	pub fn get_hash_version(&self) -> u64 {
+		use std::collections::hash_map::DefaultHasher;
+		use std::hash::Hasher;
+
+		let mut s = DefaultHasher::new();
+		self.hash(&mut s);
+		s.finish()
+	}
+	
 	pub fn slow_write_to<W: Write>(&self, w: &mut W) -> ::core::fmt::Result {
 		write!(
 			w, "{} {} {} {} {} {}", 
@@ -354,6 +382,7 @@ impl<D> Uname<D> where D: UnameData + AsUname<str, Data = <D as UnameData>::Data
 	pub fn get_display<'a>(&'a self) -> impl Display + 'a {
 		struct __FullDisplay<'a, D>(&'a Uname<D>) where D: UnameData + AsUname<str, Data = <D as UnameData>::Data>;
 		impl<'a, D> Display for __FullDisplay<'a, D> where D: UnameData + AsUname<str, Data = <D as UnameData>::Data> {
+			#[inline]
 			fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), ::core::fmt::Error> {
 				write!(
 					f, "{} {} {} {} {} {}", 
@@ -465,33 +494,60 @@ impl<D> Uname<D> where D: UnameData + AsPtrUname<RawLinuxUTSNameType, Data = <D 
 }
 
 #[inline]
-pub fn uname() -> Uname<ArrayLinuxUTSName> {
+pub fn uname() -> Result<Uname<ArrayLinuxUTSName>, UnameErr> {
 	stack_uname()
 }
 
 #[inline(always)]
-pub fn stack_uname() -> Uname<ArrayLinuxUTSName> {
+pub fn stack_uname() -> Result<Uname<ArrayLinuxUTSName>, UnameErr> {
+	Uname::get_current()
+}
+
+#[inline(always)]
+pub fn stack_uname_or_empty() -> Uname<ArrayLinuxUTSName> {
 	Uname::get_current_or_empty()
 }
 
 #[cfg_attr(docsrs, doc(cfg(feature = "box")))]
 #[cfg( any(test, feature = "box") )]
 #[inline]
-pub fn box_uname() -> Uname<BoxArrayLinuxUTSName> {
+pub fn box_uname() -> Result<Uname<BoxArrayLinuxUTSName>, UnameErr> {
+	Uname::get_current()
+}
+
+#[cfg_attr(docsrs, doc(cfg(feature = "box")))]
+#[cfg( any(test, feature = "box") )]
+#[inline]
+pub fn box_uname_or_empty() -> Uname<BoxArrayLinuxUTSName> {
 	Uname::get_current_or_empty()
+}
+
+
+#[cfg_attr(docsrs, doc(cfg(feature = "cstring")))]
+#[cfg( any(test, feature = "cstring") )]
+#[inline]
+pub fn cstring_uname() -> Result<Uname<BoxArrayLinuxUTSName>, UnameErr> {
+	Uname::get_current()
 }
 
 #[cfg_attr(docsrs, doc(cfg(feature = "cstring")))]
 #[cfg( any(test, feature = "cstring") )]
 #[inline]
-pub fn cstring_uname() -> Uname<CStringLinuxUTSName> {
+pub fn cstring_uname_or_empty() -> Uname<CStringLinuxUTSName> {
 	Uname::get_current_or_empty()
 }
 
 #[cfg_attr(docsrs, doc(cfg(feature = "rs")))]
 #[cfg( any(test, feature = "rs") )]
 #[inline]
-pub fn rs_uname() -> Uname<StringLinuxUTSName> {
+pub fn rs_uname() -> Result<Uname<CowStrLinuxUTSName>, UnameErr> {
+	Uname::get_current()
+}
+
+#[cfg_attr(docsrs, doc(cfg(feature = "rs")))]
+#[cfg( any(test, feature = "rs") )]
+#[inline]
+pub fn rs_uname_or_empty() -> Uname<CowStrLinuxUTSName> {
 	Uname::get_current_or_empty()
 }
 
