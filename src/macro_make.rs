@@ -1,16 +1,20 @@
 
+//! An internal macro to create new behavior for the `uname` structure.
+
+/// An internal macro to create new behavior for the `uname` structure.
 #[doc(hidden)]
 #[macro_export]
 macro_rules! make_uname_data {
 	// PUB OR PRIVATE (...)
 	[
+		$(#!for_enum: #[doc = $($doc:tt)*])*
 		$(#![$cfg_ident:tt ( $($cfg:tt)* )])*
 		#[$($addition_pub: tt)*] $enum_name: tt ( $($enum_data: tt)* ) {
 			$( extern crate $externcrate_all:ident; )*
 			$( use $use_all:path; )*
 			
-			$(#[ $($empty_data_addition: tt)* ])*
-			empty_data || $(($empty_data_expr:expr))? $($empty_data:block)?, // EXPR || BLOCK
+			$(#[ $($build_empty_data_addition: tt)* ])*
+			build_empty_data || $(($build_empty_data_expr:expr))? $($build_empty_data:block)?, // EXPR || BLOCK
 			
 			$(#[ $($get_current_addition: tt)* ])*
 			get_current	|$get_current_ok:ident, $get_current_e: ident| $(($get_current_expr:expr))? $($get_current:block)?, // EXPR || BLOCK
@@ -43,6 +47,7 @@ macro_rules! make_uname_data {
 				TODO, ONLY_RUSTCFG_DOC
 			*/
 			
+			$(#[doc = $($doc)*])*
 			$(#[$cfg_ident( $($cfg)* )])*
 			#[derive(Debug)]
 			$($addition_pub)* enum $enum_name {}
@@ -53,7 +58,7 @@ macro_rules! make_uname_data {
 			}
 			
 			$(#[$cfg_ident( $($cfg)* )])*
-			impl $crate::UnameData for $enum_name {
+			impl $crate::UnameBeh for $enum_name {
 				type Data = $crate::__make_uname_structdata!( @get_type[ $($enum_data)* ] );
 				
 				$(
@@ -64,10 +69,10 @@ macro_rules! make_uname_data {
 					}
 				)?
 				
-				$(#[ $($empty_data_addition)* ])*
-				fn empty_data() -> Self::Data {
-					$($empty_data_expr)?
-					$($empty_data)?
+				$(#[ $($build_empty_data_addition)* ])*
+				fn build_empty_data() -> Self::Data {
+					$($build_empty_data_expr)?
+					$($build_empty_data)?
 				}
 				
 				fn get_current_fn<R>($get_current_ok: impl FnOnce(Uname<Self>) -> R, $get_current_e: impl FnOnce($crate::core::UnameErr) -> R) -> R {
@@ -117,17 +122,17 @@ macro_rules! __next_macrocode_for_feature {
 macro_rules! __make_uname_structdata {
 	[
 		$(#[$($cfg_all:tt)*])*
-		@make [$($addition_pub: tt)*] [ $enum_data: ident { $( $enum_ident: ident : $enum_ty: ty ),* $(,)? } ] 
+		@make [$($addition_pub: tt)*] [ $(#for_new($addition_new:tt): )? $enum_data: ident { $( $enum_ident: ident : $enum_ty: path ),* $(,)? } ] 
 	] => {
 		$(#[$($cfg_all)*])*
-		#[derive(Debug, Hash)]
 		$($addition_pub)* struct $enum_data {
-			$( $enum_ident : $enum_ty ),*
+			$( pub (crate) $enum_ident : $enum_ty ),*
 		}
 		
 		impl $enum_data {
+			/// Creating a `Uname` data with a user data set.
 			#[inline]
-			pub const fn new(
+			pub const $($addition_new)? fn new(
 				$( $enum_ident : $enum_ty ),*
 			) -> Self {
 				Self {
@@ -136,13 +141,13 @@ macro_rules! __make_uname_structdata {
 			}
 		}
 	};
-	[ @get_type [ $enum_data: ident { $($unk:tt)* } ] ] => { $enum_data };
+	[ @get_type [ $(#for_new($addition_new:tt): )?  $enum_data: ident { $($unk:tt)* } ] ] => { $enum_data };
 	
 	[
 		$(#[$($cfg_all:tt)*])*
-		@make [$($addition_pub: tt)*][ $enum_data:ty ]
+		@make [$($addition_pub: tt)*][ $(#for_new($addition_new:tt): )?  $enum_data:ty ]
 	] => {};
-	[ @get_type [ $($enum_data:tt)* ] ] => { $($enum_data)* };
+	[ @get_type [ $(#for_new($addition_new:tt): )?  $($enum_data:tt)* ] ] => { $($enum_data)* };
 }
 
 #[doc(hidden)]
@@ -150,7 +155,7 @@ macro_rules! __make_uname_structdata {
 macro_rules! __make_trait_for_uname {
 	[
 		@[$($enum_name:tt)*]:
-		impl AsUname <$as_uname:ty> for #$for:tt {
+		impl GetUname <$as_uname:ty> for #$for:tt {
 			#ref($ref_name: tt) => $asname:ident <$asname_ty:ty>;
 		}
 		
@@ -158,13 +163,13 @@ macro_rules! __make_trait_for_uname {
 	] => {
 		$crate::__make_trait_for_uname! {
 			@[$($enum_name)*]:
-			impl AsUname <$as_uname> for #$for {
-				#[inline(always)] sysname	|data| (<$ref_name as $asname<$asname_ty>>::as_sysname(data)),
-				#[inline(always)] nodename	|data| (<$ref_name as $asname<$asname_ty>>::as_nodename(data)),
-				#[inline(always)] release	|data| (<$ref_name as $asname<$asname_ty>>::as_release(data)),
-				#[inline(always)] version	|data| (<$ref_name as $asname<$asname_ty>>::as_version(data)),
-				#[inline(always)] machine	|data| (<$ref_name as $asname<$asname_ty>>::as_machine(data)),
-				#[inline(always)] domainname	|data| (<$ref_name as $asname<$asname_ty>>::as_domainname(data)),
+			impl GetUname <$as_uname> for #$for {
+				#[inline(always)] sysname	|data| (<$ref_name as $asname<$asname_ty>>::get_sysname(data)),
+				#[inline(always)] nodename	|data| (<$ref_name as $asname<$asname_ty>>::get_nodename(data)),
+				#[inline(always)] release	|data| (<$ref_name as $asname<$asname_ty>>::get_release(data)),
+				#[inline(always)] version	|data| (<$ref_name as $asname<$asname_ty>>::get_version(data)),
+				#[inline(always)] machine	|data| (<$ref_name as $asname<$asname_ty>>::get_machine(data)),
+				#[inline(always)] domainname	|data| (<$ref_name as $asname<$asname_ty>>::get_domainname(data)),
 			}
 			
 			$($unk)*
@@ -218,7 +223,7 @@ macro_rules! __make_trait_for_uname {
 		$($unk:tt)*
 	] => {
 		impl $crate::AsPtrUname<$as_uname> for $($enum_name)* {
-			type Data = <$($enum_name)* as $crate::UnameData>::Data;
+			type Data = <$($enum_name)* as $crate::UnameBeh>::Data;
 			
 			$(#[ $($sysname_addition)* ])*
 			fn as_ptr_sysname($sysname_data: &Self::Data) -> *const $as_uname {
@@ -263,10 +268,10 @@ macro_rules! __make_trait_for_uname {
 		}
 	};
 	
-	[ // AsUname
+	[ // GetUname
 		@[$($enum_name:tt)*]:
 		
-		impl AsUname<$as_uname:ty> for #self {
+		impl GetUname<$as_uname:ty> for #self {
 			$(#[ $($sysname_addition: tt)* ])*
 			sysname	|$sysname_data: ident| $(($sysname_expr:expr))? $($sysname:block)?, // EXPR || BLOCK
 			
@@ -287,94 +292,41 @@ macro_rules! __make_trait_for_uname {
 		}
 		$($unk:tt)*
 	] => {
-		impl $crate::AsUname<$as_uname> for $($enum_name)* {
-			type Data = <$($enum_name)* as $crate::UnameData>::Data;
+		impl $crate::GetUname<$as_uname> for $($enum_name)* {
+			type Data = <$($enum_name)* as $crate::UnameBeh>::Data;
 			
 			$(#[ $($sysname_addition)* ])*
-			fn as_sysname($sysname_data: &Self::Data) -> &$as_uname {
+			fn get_sysname($sysname_data: &Self::Data) -> &$as_uname {
 				$($sysname_expr)?
 				$($sysname)?
 			}
 			
 			$(#[ $($nodename_addition)* ])*
-			fn as_nodename($nodename_data: &Self::Data) -> &$as_uname {
+			fn get_nodename($nodename_data: &Self::Data) -> &$as_uname {
 				$($nodename_expr)?
 				$($nodename)?
 			}
 			
 			$(#[ $($release_addition)* ])*
-			fn as_release($release_data: &Self::Data) -> &$as_uname {
+			fn get_release($release_data: &Self::Data) -> &$as_uname {
 				$($release_expr)?
 				$($release)?
 			}
 			
 			$(#[ $($version_addition)* ])*
-			fn as_version($version_data: &Self::Data) -> &$as_uname {
+			fn get_version($version_data: &Self::Data) -> &$as_uname {
 				$($version_expr)?
 				$($version)?
 			}
 			
 			$(#[ $($machine_addition)* ])*
-			fn as_machine($machine_data: &Self::Data) -> &$as_uname {
+			fn get_machine($machine_data: &Self::Data) -> &$as_uname {
 				$($machine_expr)?
 				$($machine)?
 			}
 			
 			$(#[ $($machine_addition)* ])*
-			fn as_domainname($domainname_data: &Self::Data) -> &$as_uname {
-				$($domainname_expr)?
-				$($domainname)?
-			}
-		}
-		$crate::__make_trait_for_uname! {
-			@[$($enum_name)*]:
-			
-			$($unk)*
-		}
-	};
-	[ // Hash
-		@[$($enum_name:tt)*]:
-			
-		impl Hash<$as_uname:ty> for #self {
-			hash|$state:ident| $(($hash_expr:expr))? $($hash:block)?, // EXPR || BLOCK
-		}
-		$($unk:tt)*
-	] => {
-		impl <$as_uname> for $($enum_name)* {
-			type Data = <$($enum_name)* as $crate::UnameData>::Data;
-			
-			$(#[ $($sysname_addition)* ])*
-			fn as_sysname($sysname_data: &Self::Data) -> &$as_uname {
-				$($sysname_expr)?
-				$($sysname)?
-			}
-			
-			$(#[ $($nodename_addition)* ])*
-			fn as_nodename($nodename_data: &Self::Data) -> &$as_uname {
-				$($nodename_expr)?
-				$($nodename)?
-			}
-			
-			$(#[ $($release_addition)* ])*
-			fn as_release($release_data: &Self::Data) -> &$as_uname {
-				$($release_expr)?
-				$($release)?
-			}
-			
-			$(#[ $($version_addition)* ])*
-			fn as_version($version_data: &Self::Data) -> &$as_uname {
-				$($version_expr)?
-				$($version)?
-			}
-			
-			$(#[ $($machine_addition)* ])*
-			fn as_machine($machine_data: &Self::Data) -> &$as_uname {
-				$($machine_expr)?
-				$($machine)?
-			}
-			
-			$(#[ $($machine_addition)* ])*
-			fn as_domainname($domainname_data: &Self::Data) -> &$as_uname {
+			fn get_domainname($domainname_data: &Self::Data) -> &$as_uname {
 				$($domainname_expr)?
 				$($domainname)?
 			}
